@@ -67,7 +67,7 @@ loan_in_origin(L, O, N2) :- // Carried over from predecessor
   !invalidate_loan(L, N1).
 
 loan_in_origin(L, O2, N) :- // Transitive closure
-  subset(O1, O2),
+  subset(O1, O2, N),
   loan_in_origin(L, O1, N).
 
 ////////////////////////////////////////////
