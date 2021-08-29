@@ -10,7 +10,7 @@
 .decl invalidate_loan(l: Loan, n: Node)
 .input invalidate_loan
 
-// The path named in `l` changed without invalidating the underlying memory; 
+// The path named in `l` changed without invalidating the underlying memory;
 // subsequence invalidations of `l` do not affect existing references.
 .decl clear_loan(l: Loan, n: Node)
 .input clear_loan
@@ -37,6 +37,7 @@
 
 /////////////////////////////////////////////
 .decl subset(o1: Origin, o2: Origin, n: Node)
+.output subset
 
 subset(O1, O2, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
@@ -54,6 +55,7 @@ subset(O1, O3, N1) :- // Transitive closure
 
 /////////////////////////////////////////////////
 .decl loan_in_origin(l: Loan, o: Origin, n: Node)
+.output loan_in_origin
 
 loan_in_origin(L, O, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
@@ -72,6 +74,7 @@ loan_in_origin(L, O2, N) :- // Transitive closure
 
 ////////////////////////////////////////////
 .decl origin_invalidated(o: Origin, n: Node)
+.output origin_invalidated
 
 origin_invalidated(O, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
