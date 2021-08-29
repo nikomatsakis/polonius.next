@@ -1,6 +1,6 @@
 use polonius;
 
 #[test]
-fn test() -> eyre::Result<()> {
+fn example_a() -> eyre::Result<()> {
     polonius::test_harness("tests/example-a")
 }
