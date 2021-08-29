@@ -44,7 +44,7 @@ peg::parser! {
             Statement { name, text, facts, successors }
         }
 
-        rule fact() -> Fact = name:ident() _ "(" _ arguments:symbol()**comma() _ ")" {
+        rule fact() -> Fact = comment()* _ name:ident() _ "(" _ arguments:symbol()**comma() _ ")" {
             Fact { name, arguments }
         }
 
