@@ -61,8 +61,8 @@ print("""digraph G {
     rankdir = "TD"
     node [ shape = "rectangle" ]
 """)
-for node in sorted(input_per_node):
-    input_facts = input_per_node[node]
+for node in sorted(node_texts):
+    input_facts = input_per_node.get(node, [])
     node_text = node_texts[node]
 
     # Then the body: the graph nodes, formatted as

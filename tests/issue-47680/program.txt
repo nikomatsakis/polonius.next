@@ -1,0 +1,56 @@
+// #![feature(nll)]
+//
+// struct Thing;
+//
+// impl Thing {
+//     fn maybe_next(&mut self) -> Option<&mut Self> { None }
+// }
+//
+// fn main() {
+//     let mut temp = &mut Thing;
+//
+//    loop {
+//        match temp.maybe_next() {
+//            Some(v) => { temp = v; }
+//            None => { }
+//        }
+//    }
+// }
+
+a: "temp = &'0 mut Thing" {
+    introduce_loan(L_Thing, '0)
+    introduce_subset('0, 'temp)
+    goto b
+}
+
+b: "t0 = &'1 mut *temp" {
+    clear_loan('t0)
+    clear_origin('1)
+    access("L_*temp")
+    invalidate_loan("L_*temp")
+    introduce_loan("L_*temp", '1)
+    introduce_subset('tmp)
+    introduce_subset('1, 't0)
+    goto c
+}
+
+c: "v = MaybeNext(t0)" {
+    clear_origin('v)
+    introduce_subset('t0, 'v)
+    goto d e
+}
+
+d: "temp = v" {
+    clear_loan("L_*temp")
+    clear_origin('temp)
+    introduce_subset('v, 'temp)
+    goto f
+}
+
+e: "(pass)" {
+    goto f
+}
+
+f: "(pass)" {
+    goto b
+}

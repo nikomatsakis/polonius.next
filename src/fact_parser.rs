@@ -31,12 +31,14 @@ pub struct Fact {
 
 peg::parser! {
     grammar fact_parser() for str {
-        pub rule program() -> Program = n:statement()**__ {
+        pub rule program() -> Program = comment()* _ n:statement()**__ {
             Program { statements: n }
         }
 
         rule _ = quiet!{[' ' | '\n']*}
         rule __ = quiet!{[' ' | '\n']+}
+
+        rule comment() -> () = _ "//" [^'\n']* "\n" { () }
 
         rule statement() -> Statement = name:ident() _ ":" _ text:string() _ "{" _ facts:fact()**__ _ "goto" _ successors:ident()**__ _ "}" {
             Statement { name, text, facts, successors }
