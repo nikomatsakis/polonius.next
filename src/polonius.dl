@@ -2,7 +2,54 @@
 .type Node <: symbol
 
 /////////////////////////////////////////////
-
+// Inputs
+//
+// ## Assumptions about ordering
+// 
+// For a given node `N`...
+// 
+// * First we perform any accesses `access_origin(O, N)`
+// * Then we invalidate any origins `invalidate_origin(L, N)`
+// * Then we clear any origins `clear_origin`
+// * Then we introduce any subsets `introduce_subset`
+// 
+// This corresponds to 
+// 
+// ```
+// place = expr
+// ```
+// 
+// * Evaluating the expr accesses the origins (including potentially some in place)
+// * Then place is overwritten, invalidating and clearing loans
+// * Storing the value also creates subtyping relationships between the type of the value that was stored and the place it was stored into
+//
+// ## Rules to generate inputs:
+//
+// * For each place `P` that is read, generate `access_origin`...
+//     * for each origin in the type of `P`
+//     * for the origin of each reference that is deref'd in `P`
+//          * e.g., `read((*x).0)` where `x: &'x0 (&'x1 u32, &'x2 u32)` would generate
+//              * `access_origin('x0)` because of the `*`
+//              * `access_origin('x1)` because the final type of `(*x).0` is `&'x1 u32`
+// * Generate `invalidate_origin` for each loan origin that is invalidated by reads/writes
+//     * e.g., if the expression reads `x`, and there is a mut borrow `'L_mut_x` of `x`, then we would generate
+//       `invalidate_origin('L_mut_x)`
+// * Generate `clear_origin` for each loan origin that is cleared by reads/writes
+//     * e.g., if there is a loan `'L_*temp` where `temp: &T` and this expression writes to `temp`, then `'L_*temp` is cleared,
+//       not invalidated. This is because memory at `*temp` is not owned, so it is not freed by writing to `temp`,
+//       but `*temp` no longer names the same memory anymore.
+// * If this is a `&'L_P P` for some place `P`, it is treated as a read of the place `P`:
+//     * In addition, "unroll" P to add subset relations:
+//          * If `P = *Q` where `Q: &'O T`, then `'L_P <= O` (do not continue unrolling)
+//          * If `P = *Q` where `Q: &'O mut T`, then `'L_P <= O` and continue "unrolling" `Q`
+//          * Why do we continue only with `&mut`? The path we took to reach a `&` not important; the ref could just
+//            be copied out anyway. For `&mut` that path *is* important, because once we finish with our loan,
+//            it can be used to perform mutation again. We need to ensure that we remember the path we came from.
+// * If this is a `&'L_mut_P mut P` for some place `P`, it is treated as a write of the place `P`:
+//     * In addition, "unroll" P to add subset relations:
+//          * If `P = *Q` where `Q: &'O T`, then error (mut borrow of shared content)
+//          * If `P = *Q` where `Q: &'O mut T`, then `'L_P <= O` and continue "unrolling" `Q`
+// * Generate `introduce_subset` for subsets that arise from where-clauses or subtyping on this node
 
 // access_origin data with origin `o` at node `n`
 .decl access_origin(o: Origin, n: Node)
