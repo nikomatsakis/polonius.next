@@ -1,5 +1,0 @@
-digraph G {
-    rankdir = "TD"
-    node [ shape = "rectangle" ]
-
-}
