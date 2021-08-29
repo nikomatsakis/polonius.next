@@ -1,6 +1,6 @@
 //! Parser for "fact files", a compact way to represent facts.
 //!
-//! ```
+//! ```notrust
 //! Program    := Statement,
 //! Statement  := Ident: String { Fact* goto Ident* }
 //! Fact       := Ident ( Symbol, )
