@@ -1,0 +1,4 @@
+x = 3	a
+y = &'0 x	b
+x = 4	c
+drop(y)	d
