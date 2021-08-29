@@ -52,7 +52,7 @@ peg::parser! {
 
         rule symbol() -> String = ident() / string()
 
-        rule ident() -> String = t:$("'"?['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9']+) {
+        rule ident() -> String = t:$("'"?['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' | '*' ]+) {
             t.to_string()
         }
 
@@ -84,13 +84,11 @@ pub fn generate_facts(input: &str, output_path: &Path) -> eyre::Result<()> {
 }
 
 const EXPECTED_FACT_NAMES: &[&str] = &[
-    "access",
+    "access_origin",
     "cfg_edge",
-    "clear_loan",
     "clear_origin",
-    "introduce_loan",
     "introduce_subset",
-    "invalidate_loan",
+    "invalidate_origin",
 ];
 
 /// Maps a program into a set of facts:

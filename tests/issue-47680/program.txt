@@ -17,32 +17,60 @@
 //    }
 // }
 
-a: "temp = &'0 mut Thing" {
-    introduce_loan(L_Thing, '0)
-    introduce_subset('0, 'temp)
+// temp: &'temp mut Thing
+// t0: &'t0 mut Thing
+// v: &'v mut Thing
+
+a: "temp = &'L_Thing mut Thing" {
+    introduce_subset('L_Thing, 'temp)
     goto b
 }
 
-b: "t0 = &'1 mut *temp" {
-    clear_loan('t0)
-    clear_origin('1)
-    access("L_*temp")
-    invalidate_loan("L_*temp")
-    introduce_loan("L_*temp", '1)
-    introduce_subset('tmp)
-    introduce_subset('1, 't0)
+b: "t0 = &'L_*temp mut *temp" {
+    // Mut borrow of `*temp` is considered a write to `*temp`
+    access_origin('temp)
+
+    // Writing to `*temp` invalidates any borrows of `*temp`
+    invalidate_origin('L_*temp)
+
+    // Overwriting `t0`
+    clear_origin('t0)
+
+    // Issuing a fresh `'L_*temp`
+    clear_origin('L_*temp)
+
+    // Because we are borrowing from `*temp`:
+    introduce_subset('temp, 'L_*temp)
+
+    // `&'L_*temp mut Thing <: &'t0 mut Thing`
+    introduce_subset('L_*temp, 't0)
     goto c
 }
 
 c: "v = MaybeNext(t0)" {
+    // Read `t0`
+    access_origin('t0)
+
+    // Overwriting `v`
     clear_origin('v)
+
+    // MaybeNext has sig `fn(&mut Thing) -> &mut Thing` (ignore the option for now)
     introduce_subset('t0, 'v)
     goto d e
 }
 
 d: "temp = v" {
-    clear_loan("L_*temp")
+    // Incoming value of `v` is being read
+    access_origin('v)
+
+    // Because `temp` is being overwritten
     clear_origin('temp)
+
+    // Anything that borrowed from `*temp`
+    // no longer is, since `temp` is something else
+    clear_origin('L_*temp)
+
+    // Data from `'v` is flowing into `'temp`
     introduce_subset('v, 'temp)
     goto f
 }

@@ -1,31 +1,20 @@
 .type Origin <: symbol
-.type Loan <: symbol
 .type Node <: symbol
 
-// Access data with origin `o` at node `n`
-.decl access(o: Origin, n: Node)
-.input access
+/////////////////////////////////////////////
 
-// Invalidate the loan `l` at the node `n`
-.decl invalidate_loan(l: Loan, n: Node)
-.input invalidate_loan
 
-// The path named in `l` changed without invalidating the underlying memory;
-// subsequence invalidations of `l` do not affect existing references.
-.decl clear_loan(l: Loan, n: Node)
-.input clear_loan
+// access_origin data with origin `o` at node `n`
+.decl access_origin(o: Origin, n: Node)
+.input access_origin
+
+// Invalidate the origin `o` at the node `n`
+.decl invalidate_origin(o: Origin, n: Node)
+.input invalidate_origin
 
 // All references with origin `o` are overwritten at node `n`
 .decl clear_origin(o: Origin, n: Node)
 .input clear_origin
-
-// Introduce the loan `l` into origin `o` at node `n`
-//
-// * Every borrow `&'a place` or `&'a mut place` introduces, for some unique origin `'a`:
-//     * one loan in `'a` for the borrow itself
-//     * various subset relationships between each origin `O` dereferenced by place and `'a`
-.decl introduce_loan(l: Loan, o: Origin, n: Node)
-.input introduce_loan
 
 // Require that `o1 <= o2` at node `n`
 .decl introduce_subset(o1: Origin, o2: Origin, n: Node)
@@ -53,39 +42,26 @@ subset(O1, O3, N1) :- // Transitive closure
   subset(O1, O2, N1),
   subset(O2, O3, N1).
 
-/////////////////////////////////////////////////
-.decl loan_in_origin(l: Loan, o: Origin, n: Node)
-.output loan_in_origin
-
-loan_in_origin(L, O, N2) :- // Introduced by predecessor
-  cfg_edge(N1, N2),
-  introduce_loan(L, O, N1).
-
-loan_in_origin(L, O, N2) :- // Carried over from predecessor
-  cfg_edge(N1, N2),
-  loan_in_origin(L, O, N1),
-  !clear_loan(L, N1),
-  !clear_origin(O, N1),
-  !invalidate_loan(L, N1).
-
-loan_in_origin(L, O2, N) :- // Transitive closure
-  subset(O1, O2, N),
-  loan_in_origin(L, O1, N).
-
 ////////////////////////////////////////////
 .decl origin_invalidated(o: Origin, n: Node)
 .output origin_invalidated
 
+origin_invalidated(O2, N2) :- // Introduced by predecessor
+  cfg_edge(N1, N2),
+  !clear_origin(O2, N1),
+  subset(O1, O2, N1),
+  invalidate_origin(L, O1).
+
 origin_invalidated(O, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
-  loan_in_origin(L, O, N1),
-  invalidate_loan(L, N1).
+  !clear_origin(O, N1),
+  invalidate_origin(L, O, N1).
 
 /////////////////////////////////////////////////////
 .decl invalidated_origin_accessed(o: Origin, n: Node)
 .output invalidated_origin_accessed
 
 invalidated_origin_accessed(O, N) :- // Introduced by predecessor
-  access(O, N),
+  access_origin(O, N),
   origin_invalidated(O, N).
 

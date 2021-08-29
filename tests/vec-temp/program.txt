@@ -12,46 +12,47 @@
 // let p: &'p u32
 // let tmp: &'tmp0 mut Vec<&'tmp1 mut u32>
 //
-// Loans
-// L_x
+// Loan origins:
+// 'L_x
+// 'L_v
 
 a: "x = 22" {
-    invalidate_loan(L_x)
+    // Any thing borrowing `x` is invalid now
+    invalidate_origin('L_x)
     goto b
 }
 
 b: "v = vec![]" {
-    invalidate_loan(L_v)
+    clear_origin('v)
+    invalidate_origin('L_v)
     goto c
 }
 
-c: "p = &'0 x" {
+c: "p = &'L_x x" {
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
-    // From the borrow of `x`
-    introduce_loan(L_x, '0)
-
-    // `&'0 u32 <: &'p u32`
-    introduce_subset('0, 'p) 
+    // `&'L_x u32 <: &'p u32`
+    introduce_subset('L_x, 'p) 
     goto d
 }
 
-d: "tmp = &'1 mut v" {
-    introduce_loan(L_v, '1)
-
+d: "tmp = &'L_v mut v" {
+    access_origin('v)
+    invalidate_origin('L_v)
+    clear_origin('L_v)
     // &'1 mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
-    introduce_subset('1, 'tmp0)
+    introduce_subset('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
-    introduce_subset('v, 'tmp1)
+    introduce_subset('L_v, 'tmp1)
     goto e
 }
 
 e: "Vec::push(tmp, p)" {
-    // Access origins in the arguments
-    access('tmp0)
-    access('tmp1)
-    access('p)
+    // access_origin origins in the arguments
+    access_origin('tmp0)
+    access_origin('tmp1)
+    access_origin('p)
 
     // Signature requires `&'p u32` <: `&'tmp1 u32`:
     introduce_subset('p, 'tmp1)
@@ -60,11 +61,11 @@ e: "Vec::push(tmp, p)" {
 }
 
 f: "x = 23" {
-    invalidate_loan(L_x)
+    invalidate_origin('L_x)
     goto g
 }
 
 g: "Vec::len(v)" {
-    access('v)
+    access_origin('v)
     goto
 }
