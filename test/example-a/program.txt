@@ -1,0 +1,20 @@
+a: "x = 3" {
+    invalidate_loan(L0)
+    goto b
+}
+
+b: "y = &'0 x" {
+    introduce_loan(L0, '0)
+    introduce_subset('0, 'y)
+    goto c
+}
+
+c: "x = 4" {
+    invalidate_loan(L0)
+    goto d
+}
+
+d: "drop(y)" {
+    access('y)
+    goto
+}
