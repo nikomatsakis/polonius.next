@@ -45,6 +45,19 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
 
     std::fs::write(output_path.join("graph.dot"), dot.stdout)?;
 
+    if std::env::var("BLESS").is_ok() {
+        let status = Command::new("cp")
+            .args(&[
+                output_path.join("invalidated_origin_accessed.csv"),
+                path.join("invalidated_origin_accessed.csv"),
+            ])
+            .status()
+            .wrap_err("failed to run diff")?;
+        if !status.success() {
+            eyre::bail!("failed to bless output");
+        }
+    }
+
     let status = Command::new("diff")
         .args(&[
             path.join("invalidated_origin_accessed.csv"),
