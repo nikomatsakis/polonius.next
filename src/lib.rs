@@ -31,19 +31,18 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
         .output()
         .wrap_err("failed to run souffle")?;
 
-    let dot = Command::new("python3")
+    let dot_path = output_path.join("graph.dot");
+    let _ = Command::new("python3")
         .args(&[
             manifest_dir
                 .join("graphviz/graphviz.py")
                 .display()
                 .to_string(),
-            facts_path.display().to_string(),
-            output_path.display().to_string(),
+            path.display().to_string(),
+            dot_path.display().to_string(),
         ])
         .output()
         .wrap_err("failed to run python3")?;
-
-    std::fs::write(output_path.join("graph.dot"), dot.stdout)?;
 
     if std::env::var("BLESS").is_ok() {
         let status = Command::new("cp")

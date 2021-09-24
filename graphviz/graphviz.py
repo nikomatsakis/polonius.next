@@ -1,9 +1,18 @@
 import sys
+import os
 from pathlib import Path
 import html
+import subprocess
 
-input_facts_dir = sys.argv[1]
-output_facts_dir = sys.argv[2]
+fact_dir = sys.argv[1]
+if not fact_dir.endswith(os.sep):
+    fact_dir += os.sep
+output_file_path = sys.argv[2]
+if os.sep not in output_file_path:
+    # output path is relative
+    output_file_path = fact_dir + os.sep + output_file_path
+input_facts_dir = fact_dir + "facts"
+output_facts_dir = fact_dir + "output"
 
 node_texts = {}
 node_predecessors = {}
@@ -57,10 +66,10 @@ for p in Path(output_facts_dir).glob("*.csv"):
         output_per_node[node].append(fact)
 
 # Output the graphviz file in the format used in the hackmd. First, the header.
-print("""digraph G {
+output_dot = """digraph G {
     rankdir = "TD"
     node [ shape = "rectangle" ]
-""")
+"""
 for node in sorted(node_texts):
     input_facts = input_per_node.get(node, [])
     node_text = node_texts[node]
@@ -77,16 +86,23 @@ for node in sorted(node_texts):
     if node in output_per_node:
         output_facts = output_per_node[node]
         rows.append("    <tr><td>-------------------</td></tr>")
-        rows.extend([f"    <tr><td>{fact}</td></tr>" for fact in sorted(output_facts)])
+        rows.extend(
+            [f"    <tr><td>{fact}</td></tr>" for fact in sorted(output_facts)])
 
     lines = "\n".join(rows)
-    print(f"""    {node} [ label = <<table border="0">
+    output_dot += f"""    {node} [ label = <<table border="0">
     <tr><td>{node_text}</td></tr>
 {lines}
-    </table>> ]""")
+    </table>> ]"""
 
     for pred in node_predecessors.get(node, []):
-        print(f"    {pred} -> {node}")
-    print()
+        output_dot += f"    {pred} -> {node}"
+    output_dot += "\n"
 
-print("}")
+output_dot += "}"
+
+with open(output_file_path, mode='w') as f:
+    f.write(output_dot)
+
+# Try producing an image from the dotfile
+subprocess.run(["dot", "-Tpdf", "-O", output_file_path])
