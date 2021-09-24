@@ -24,8 +24,8 @@ peg::parser! {
     grammar ast_parser() for str {
         pub rule program() -> ast::Program = (
             _
-            variables:var_decl()**__
-            basic_blocks:basic_block()**__
+            variables:var_decl()**__ _
+            basic_blocks:basic_block()**__ _
             _
         {
             ast::Program {
@@ -88,13 +88,13 @@ peg::parser! {
         )
 
         rule goto() -> Vec<ast::Name> = (
-            "goto" _ names:ident()**comma() { names } /
+            "goto" _ names:ident()**comma() _ ";" { names } /
             () { vec![] }
         )
 
         rule statement() -> ast::Statement = (
-            place:place() _ "=" _ expr:expr() { ast::Statement::Assign(place, expr) } /
-            expr:expr() { ast::Statement::Drop(expr) }
+            place:place() _ "=" _ expr:expr() _ ";" { ast::Statement::Assign(place, expr) } /
+            expr:expr() _ ";" { ast::Statement::Drop(expr) }
         )
 
         rule expr() -> ast::Expr = (
@@ -110,7 +110,7 @@ peg::parser! {
 
         rule access_kind() -> ast::AccessKind = (
             "copy" { ast::AccessKind::Copy } /
-            "move" { ast::AccessKind::Copy } /
+            "move" { ast::AccessKind::Move } /
             "&" _ o:origin_ident() _ "mut" { ast::AccessKind::BorrowMut(o) } /
             "&" _ o:origin_ident() { ast::AccessKind::Borrow(o) }
         )
