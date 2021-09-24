@@ -51,6 +51,7 @@ pub enum Expr {
     Access { kind: AccessKind, place: Place },
     Number { value: i32 },
     Call { name: Name, arguments: Vec<Expr> },
+    Unit,
 }
 
 #[derive(Clone, Debug)]
@@ -74,6 +75,8 @@ pub enum Ty {
     },
 
     I32,
+
+    Unit,
 
     Struct {
         name: Name,

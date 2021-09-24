@@ -25,13 +25,14 @@ peg::parser! {
         pub rule program() -> ast::Program = (
             _
             struct_decls:struct_decl()**__ _
+            fn_prototypes:fn_prototype()**__ _
             variables:var_decl()**__ _
             basic_blocks:basic_block()**__ _
             _
         {
             ast::Program {
                 struct_decls,
-                fn_prototypes: vec![], // f,
+                fn_prototypes,
                 variables,
                 basic_blocks,
             }
@@ -48,6 +49,14 @@ peg::parser! {
             "struct" _ name:ident() _ generic_decls:generic_decls() _
             "{" _ field_decls:field_decl()**comma() _ comma()? "}" {
                 ast::StructDecl { name, generic_decls, field_decls }
+            }
+        )
+
+        rule fn_prototype() -> ast::FnPrototype = (
+            "fn" _ name:ident() _ generic_decls:generic_decls() _
+            "(" _ arg_decls:field_decl()**comma() _ ")" _ "->" _ ret_ty:ty() _ ";" {
+                let arg_tys = arg_decls.into_iter().map(|a| a.ty).collect();
+                ast::FnPrototype { name, generic_decls, arg_tys, ret_ty }
             }
         )
 
@@ -69,7 +78,7 @@ peg::parser! {
             ast::VariableDecl { name, ty }
         }
 
-        rule ty() -> ast::Ty = ref_mut_ty() / ref_ty() / i32_ty() / struct_ty()
+        rule ty() -> ast::Ty = ref_mut_ty() / ref_ty() / i32_ty() / unit_ty() / struct_ty()
 
         rule ref_ty() -> ast::Ty = "&" _ origin:origin_ident() _ ty:ty() {
             ast::Ty::Ref { origin, ty: Box::new(ty) }
@@ -81,6 +90,10 @@ peg::parser! {
 
         rule i32_ty() -> ast::Ty = "i32" {
             ast::Ty::I32
+        }
+
+        rule unit_ty() -> ast::Ty = "(" _ ")" {
+            ast::Ty::Unit
         }
 
         rule struct_ty() -> ast::Ty = name:ident() parameters:parameters() {
@@ -118,7 +131,8 @@ peg::parser! {
         rule expr() -> ast::Expr = (
             kind:access_kind() _ place:place() { ast::Expr::Access { kind, place } } /
             n:$(['0'..='9']+) { ast::Expr::Number { value: i32::from_str(n).unwrap() } } /
-            name:ident() _ "(" _ arguments:expr()**comma() _ ")" { ast::Expr::Call { name, arguments} }
+            name:ident() _ "(" _ arguments:expr()**comma() _ ")" { ast::Expr::Call { name, arguments} } /
+            "(" _ ")" { ast::Expr::Unit }
         )
 
         rule place() -> ast::Place = (
