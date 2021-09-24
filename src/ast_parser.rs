@@ -24,15 +24,16 @@ peg::parser! {
     grammar ast_parser() for str {
         pub rule program() -> ast::Program = (
             _
+            struct_decls:struct_decl()**__ _
             variables:var_decl()**__ _
             basic_blocks:basic_block()**__ _
             _
         {
             ast::Program {
-                struct_decls: vec![], // s,
+                struct_decls,
                 fn_prototypes: vec![], // f,
                 variables,
-                basic_blocks, // b,
+                basic_blocks,
             }
         }
     )
@@ -43,9 +44,26 @@ peg::parser! {
         rule _ = quiet!{skip()*}
         rule __ = quiet!{skip()+}
 
-        //rule struct_decl() -> StructDecl = "struct" _ name:ident() _ "{" "}"
-        //    {StructDecl { name, generic_decls: vec![], field_decls: vec![] }
-        //}
+        rule struct_decl() -> ast::StructDecl = (
+            "struct" _ name:ident() _ generic_decls:generic_decls() _
+            "{" _ field_decls:field_decl()**comma() _ comma()? "}" {
+                ast::StructDecl { name, generic_decls, field_decls }
+            }
+        )
+
+        rule generic_decls() -> Vec<ast::GenericDecl> = (
+            "<" _ g:generic_decl()**comma() _ ">" { g } /
+            () { vec![] }
+        )
+
+        rule generic_decl() -> ast::GenericDecl = (
+            o:origin_ident() { ast::GenericDecl::Origin(o) } /
+            n:ident() { ast::GenericDecl::Ty(n) }
+        )
+
+        rule field_decl() -> ast::VariableDecl = name:ident() _ ":" _ ty:ty() {
+            ast::VariableDecl { name, ty }
+        }
 
         rule var_decl() -> ast::VariableDecl = "let" _ name:ident() _ ":" _ ty:ty() _ ";" {
             ast::VariableDecl { name, ty }
@@ -53,11 +71,11 @@ peg::parser! {
 
         rule ty() -> ast::Ty = ref_mut_ty() / ref_ty() / i32_ty() / struct_ty()
 
-        rule ref_ty() -> ast::Ty = "&" _ origin:ident() _ ty:ty() {
+        rule ref_ty() -> ast::Ty = "&" _ origin:origin_ident() _ ty:ty() {
             ast::Ty::Ref { origin, ty: Box::new(ty) }
         }
 
-        rule ref_mut_ty() -> ast::Ty = "&" _ "mut" _ origin:ident() _ ty:ty() {
+        rule ref_mut_ty() -> ast::Ty = "&" _ origin:origin_ident() _ "mut" _ ty:ty() {
             ast::Ty::RefMut { origin, ty: Box::new(ty) }
         }
 

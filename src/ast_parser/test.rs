@@ -231,3 +231,76 @@ fn copy_move_test() {
     )
     "###);
 }
+
+#[test]
+fn struct_test() {
+    let p = parse_ast(
+        "struct Iter<'me, T> { vec: &'me Vec<T>, position: i32 }
+        struct Vec<T> { item0: T }
+        
+    ",
+    );
+
+    insta::assert_debug_snapshot!(p, @r###"
+    Ok(
+        Program {
+            struct_decls: [
+                StructDecl {
+                    name: "Iter",
+                    generic_decls: [
+                        Origin(
+                            "'me",
+                        ),
+                        Ty(
+                            "T",
+                        ),
+                    ],
+                    field_decls: [
+                        VariableDecl {
+                            name: "vec",
+                            ty: Ref {
+                                origin: "'me",
+                                ty: Struct {
+                                    name: "Vec",
+                                    parameters: [
+                                        Ty(
+                                            Struct {
+                                                name: "T",
+                                                parameters: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        },
+                        VariableDecl {
+                            name: "position",
+                            ty: I32,
+                        },
+                    ],
+                },
+                StructDecl {
+                    name: "Vec",
+                    generic_decls: [
+                        Ty(
+                            "T",
+                        ),
+                    ],
+                    field_decls: [
+                        VariableDecl {
+                            name: "item0",
+                            ty: Struct {
+                                name: "T",
+                                parameters: [],
+                            },
+                        },
+                    ],
+                },
+            ],
+            fn_prototypes: [],
+            variables: [],
+            basic_blocks: [],
+        },
+    )
+    "###);
+}
