@@ -9,3 +9,7 @@ edition = "2018"
 peg = "0.7.0"
 eyre = "0.6.5"
 itertools = "0.10"
+
+# Graphviz
+glob = "0.3"
+html-escape = "0.2"

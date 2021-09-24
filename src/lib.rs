@@ -1,4 +1,5 @@
 mod fact_parser;
+mod graphviz;
 
 use std::{path::PathBuf, process::Command};
 
@@ -32,17 +33,7 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
         .wrap_err("failed to run souffle")?;
 
     let dot_path = output_path.join("graph.dot");
-    let _ = Command::new("python3")
-        .args(&[
-            manifest_dir
-                .join("graphviz/graphviz.py")
-                .display()
-                .to_string(),
-            path.display().to_string(),
-            dot_path.display().to_string(),
-        ])
-        .output()
-        .wrap_err("failed to run python3")?;
+    graphviz::create_graph(path.as_path(), dot_path.as_path());
 
     if std::env::var("BLESS").is_ok() {
         let status = Command::new("cp")
