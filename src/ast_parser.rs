@@ -13,6 +13,7 @@ use eyre::WrapErr;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::ast;
 
@@ -24,13 +25,14 @@ peg::parser! {
         pub rule program() -> ast::Program = (
             _
             variables:var_decl()**__
+            basic_blocks:basic_block()**__
             _
         {
             ast::Program {
                 struct_decls: vec![], // s,
                 fn_prototypes: vec![], // f,
                 variables,
-                basic_blocks: vec![], // b,
+                basic_blocks, // b,
             }
         }
     )
@@ -79,12 +81,50 @@ peg::parser! {
 
         rule comma() -> () = _ "," _ { }
 
+        rule basic_block() -> ast::BasicBlock = (
+            name:ident() _ ":" _ "{" _ statements:statement()**__ _ successors:goto() _ "}" {
+                ast::BasicBlock { name, statements, successors }
+            }
+        )
+
+        rule goto() -> Vec<ast::Name> = (
+            "goto" _ names:ident()**comma() { names } /
+            () { vec![] }
+        )
+
+        rule statement() -> ast::Statement = (
+            place:place() _ "=" _ expr:expr() { ast::Statement::Assign(place, expr) } /
+            expr:expr() { ast::Statement::Drop(expr) }
+        )
+
+        rule expr() -> ast::Expr = (
+            kind:access_kind() _ place:place() { ast::Expr::Access { kind, place } } /
+            n:$(['0'..='9']+) { ast::Expr::Number { value: i32::from_str(n).unwrap() } } /
+            name:ident() _ "(" _ arguments:expr()**comma() _ ")" { ast::Expr::Call { name, arguments} }
+        )
+
+        rule place() -> ast::Place = (
+            base:ident() _ dot() _ fields:ident()**dot() { ast::Place { base, fields } } /
+            base:ident() { ast::Place { base, fields: vec![] } }
+        )
+
+        rule access_kind() -> ast::AccessKind = (
+            "copy" { ast::AccessKind::Copy } /
+            "move" { ast::AccessKind::Copy } /
+            "&" _ o:origin_ident() _ "mut" { ast::AccessKind::BorrowMut(o) } /
+            "&" _ o:origin_ident() { ast::AccessKind::Borrow(o) }
+        )
+
+        rule dot() -> () = _ "." _
+
         rule ident() -> ast::Name = t:$(['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' | '*' ]+) {
             t.to_string()
         }
+
         rule origin_ident() -> ast::Name = t:$("'"['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' | '*' ]+) {
             t.to_string()
         }
+
     }
 }
 

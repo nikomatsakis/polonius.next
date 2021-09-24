@@ -49,7 +49,7 @@ pub enum Statement {
 #[derive(Clone, Debug)]
 pub enum Expr {
     Access { kind: AccessKind, place: Place },
-
+    Number { value: i32 },
     Call { name: Name, arguments: Vec<Expr> },
 }
 
@@ -89,8 +89,8 @@ pub enum Parameter {
 
 #[derive(Clone, Debug)]
 pub struct Place {
-    base: Name,
-    fields: Vec<Name>,
+    pub base: Name,
+    pub fields: Vec<Name>,
 }
 
 pub type Name = String;
