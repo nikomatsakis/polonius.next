@@ -2,6 +2,7 @@ use glob::glob;
 use html_escape;
 use itertools::Itertools;
 use std::{collections::HashMap, fs, io::Write, path::Path, process::Command};
+const IMPORTANT_RELATIONS: &[&str] = &["invalidated_origin_accessed"];
 
 pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
     // Resolve name-only output paths
@@ -64,10 +65,10 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
                         input_per_node.insert(node.to_string(), Vec::new());
                     }
                     let pretty_atoms: String = Itertools::intersperse(atoms, ", ").collect();
-                    input_per_node
-                        .get_mut(node)
-                        .unwrap()
-                        .push(format!("{}({})", relation, pretty_atoms));
+                    input_per_node.get_mut(node).unwrap().push((
+                        format!("{}({})", relation, pretty_atoms),
+                        IMPORTANT_RELATIONS.contains(&relation),
+                    ));
                 }
             }
         }
@@ -93,10 +94,10 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
                 output_per_node.insert(node.to_string(), Vec::new());
             }
             let pretty_atoms: String = Itertools::intersperse(atoms, ", ").collect();
-            output_per_node
-                .get_mut(node)
-                .unwrap()
-                .push(format!("{}({})", relation, pretty_atoms));
+            output_per_node.get_mut(node).unwrap().push((
+                format!("{}({})", relation, pretty_atoms),
+                IMPORTANT_RELATIONS.contains(&relation),
+            ));
         }
     }
 
@@ -121,7 +122,13 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
         let mut rows: Vec<_> = input_facts
             .into_iter()
             .sorted()
-            .map(|fact| format!("    <tr><td>{}</td></tr>", fact))
+            .map(|(fact, is_important)| {
+                if *is_important {
+                    format!(r#"    <tr><td bgcolor = "yellow">{}</td></tr>"#, fact)
+                } else {
+                    format!("    <tr><td>{}</td></tr>", fact)
+                }
+            })
             .collect();
         if output_per_node.contains_key(node) {
             let output_facts = &output_per_node[node];
@@ -130,7 +137,13 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
                 output_facts
                     .into_iter()
                     .sorted()
-                    .map(|fact| format!("    <tr><td>{}</td></tr>", fact)),
+                    .map(|(fact, is_important)| {
+                        if *is_important {
+                            format!(r#"    <tr><td bgcolor = "yellow">{}</td></tr>"#, fact)
+                        } else {
+                            format!("    <tr><td>{}</td></tr>", fact)
+                        }
+                    }),
             );
         }
         let lines: String = Itertools::intersperse(rows.iter().map(|s| s.as_str()), "\n").collect();
