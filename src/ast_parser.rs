@@ -23,21 +23,18 @@ mod test;
 peg::parser! {
     grammar ast_parser() for str {
         pub rule program() -> ast::Program = (
-            _
-            struct_decls:struct_decl()**__ _
+            _ struct_decls:struct_decl()**__ _
             fn_prototypes:fn_prototype()**__ _
             variables:var_decl()**__ _
-            basic_blocks:basic_block()**__ _
-            _
-        {
-            ast::Program {
-                struct_decls,
-                fn_prototypes,
-                variables,
-                basic_blocks,
+            basic_blocks:basic_block()**__ _ {
+                ast::Program {
+                    struct_decls,
+                    fn_prototypes,
+                    variables,
+                    basic_blocks,
+                }
             }
-        }
-    )
+        )
 
         rule whitespace() -> () = [' ' | '\n']
         rule comment() -> () = "//" [^'\n']* "\n" { () }
