@@ -38,6 +38,7 @@
 //     * e.g., if there is a loan `'L_*temp` where `temp: &T` and this expression writes to `temp`, then `'L_*temp` is cleared,
 //       not invalidated. This is because memory at `*temp` is not owned, so it is not freed by writing to `temp`,
 //       but `*temp` no longer names the same memory anymore.
+// * For every `&'L_P P` expression, generate `clear_origin('L_P)` 
 // * If this is a `&'L_P P` for some place `P`, it is treated as a read of the place `P`:
 //     * In addition, "unroll" P to add subset relations:
 //          * If `P = *Q` where `Q: &'O T`, then `'L_P <= O` (do not continue unrolling)
