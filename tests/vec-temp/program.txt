@@ -32,6 +32,9 @@ c: "p = &'L_x x" {
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
+    // Clear 'L_x because it's being recreated
+    clear_origin('L_x)
+
     // `&'L_x u32 <: &'p u32`
     introduce_subset('L_x, 'p) 
     goto d
