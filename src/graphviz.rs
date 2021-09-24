@@ -4,6 +4,50 @@ use itertools::Itertools;
 use std::{collections::HashMap, fs, io::Write, path::Path, process::Command};
 const IMPORTANT_RELATIONS: &[&str] = &["invalidated_origin_accessed"];
 
+#[derive(Debug, Default)]
+struct Data {
+    pub(crate) node_texts: HashMap<String, String>,
+    pub(crate) input_per_node: HashMap<String, Vec<(String, Importance)>>,
+    pub(crate) node_predecessors: HashMap<String, Vec<String>>,
+    pub(crate) output_per_node: HashMap<String, Vec<(String, Importance)>>,
+}
+
+impl Data {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Importance {
+    High,
+    Low,
+}
+
+impl Default for Importance {
+    fn default() -> Self {
+        Self::Low
+    }
+}
+
+impl Importance {
+    fn style(&self) -> &'static str {
+        match self {
+            Self::High => r#" bgcolor= "yellow""#,
+            Self::Low => "",
+        }
+    }
+}
+
+impl From<bool> for Importance {
+    fn from(is_important: bool) -> Self {
+        match is_important {
+            true => Self::High,
+            false => Self::Low,
+        }
+    }
+}
+
 pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
     // Resolve name-only output paths
     let output_file_path = if output_file_path.components().count() == 1 {
@@ -14,13 +58,9 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
     let input_facts_directory = fact_directory.join("facts");
     let output_facts_directory = fact_directory.join("output");
 
-    let mut node_texts = HashMap::new();
-    let mut input_per_node = HashMap::new();
-    let mut node_predecessors = HashMap::new();
-    let mut output_per_node = HashMap::new();
-
     // Process input facts: load fact files from the provided input facts directory, and store the
     // atoms (without locations) in the files as facts at each node in the CFG
+    let mut data = Data::new();
     let pattern = input_facts_directory.join("*.facts");
     for path in glob(pattern.to_str().expect("fact path was not UTF-8"))
         .unwrap()
@@ -42,7 +82,7 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
                     let text = atoms.next().unwrap();
                     // To be displayed, escape the node text so that ticks and ampersands show up
                     let text = format!("{}: {}", node, text);
-                    node_texts.insert(
+                    data.node_texts.insert(
                         node.to_string(),
                         html_escape::encode_text(&text).to_string(),
                     );
@@ -52,22 +92,25 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
                     let p = atoms.next().unwrap();
                     let q = atoms.next().unwrap();
 
-                    if !node_predecessors.contains_key(q) {
-                        node_predecessors.insert(q.to_string(), Vec::new());
+                    if !data.node_predecessors.contains_key(q) {
+                        data.node_predecessors.insert(q.to_string(), Vec::new());
                     }
 
-                    node_predecessors.get_mut(q).unwrap().push(p.to_string());
+                    data.node_predecessors
+                        .get_mut(q)
+                        .unwrap()
+                        .push(p.to_string());
                 }
                 _ => {
                     // Actual facts happening at the node
                     let node = atoms.next_back().unwrap();
-                    if !input_per_node.contains_key(node) {
-                        input_per_node.insert(node.to_string(), Vec::new());
+                    if !data.input_per_node.contains_key(node) {
+                        data.input_per_node.insert(node.to_string(), Vec::new());
                     }
                     let pretty_atoms: String = Itertools::intersperse(atoms, ", ").collect();
-                    input_per_node.get_mut(node).unwrap().push((
+                    data.input_per_node.get_mut(node).unwrap().push((
                         format!("{}({})", relation, pretty_atoms),
-                        IMPORTANT_RELATIONS.contains(&relation),
+                        IMPORTANT_RELATIONS.contains(&relation).into(),
                     ));
                 }
             }
@@ -90,13 +133,13 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
         for line in facts.lines() {
             let mut atoms = line.split('\t');
             let node = atoms.next_back().unwrap();
-            if !output_per_node.contains_key(node) {
-                output_per_node.insert(node.to_string(), Vec::new());
+            if !data.output_per_node.contains_key(node) {
+                data.output_per_node.insert(node.to_string(), Vec::new());
             }
             let pretty_atoms: String = Itertools::intersperse(atoms, ", ").collect();
-            output_per_node.get_mut(node).unwrap().push((
+            data.output_per_node.get_mut(node).unwrap().push((
                 format!("{}({})", relation, pretty_atoms),
-                IMPORTANT_RELATIONS.contains(&relation),
+                IMPORTANT_RELATIONS.contains(&relation).into(),
             ));
         }
     }
@@ -109,9 +152,9 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
     "#
     .to_string();
     let no_input_facts = Vec::new();
-    for node in node_texts.keys().sorted() {
-        let input_facts = input_per_node.get(node).unwrap_or(&no_input_facts);
-        let node_text = &node_texts[node];
+    for node in data.node_texts.keys().sorted() {
+        let input_facts = data.input_per_node.get(node).unwrap_or(&no_input_facts);
+        let node_text = &data.node_texts[node];
 
         // Then the body: the graph nodes, formatted as
         // - the node header setting up the table with facts as rows
@@ -122,29 +165,16 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
         let mut rows: Vec<_> = input_facts
             .into_iter()
             .sorted()
-            .map(|(fact, is_important)| {
-                if *is_important {
-                    format!(r#"    <tr><td bgcolor = "yellow">{}</td></tr>"#, fact)
-                } else {
-                    format!("    <tr><td>{}</td></tr>", fact)
-                }
+            .map(|(fact, importance)| {
+                format!(r#"    <tr><td{}>{}</td></tr>"#, importance.style(), fact)
             })
             .collect();
-        if output_per_node.contains_key(node) {
-            let output_facts = &output_per_node[node];
+        if data.output_per_node.contains_key(node) {
+            let output_facts = &data.output_per_node[node];
             rows.push("    <tr><td>-------------------</td></tr>".into());
-            rows.extend(
-                output_facts
-                    .into_iter()
-                    .sorted()
-                    .map(|(fact, is_important)| {
-                        if *is_important {
-                            format!(r#"    <tr><td bgcolor = "yellow">{}</td></tr>"#, fact)
-                        } else {
-                            format!("    <tr><td>{}</td></tr>", fact)
-                        }
-                    }),
-            );
+            rows.extend(output_facts.into_iter().sorted().map(|(fact, importance)| {
+                format!(r#"    <tr><td{}>{}</td></tr>"#, importance.style(), fact)
+            }));
         }
         let lines: String = Itertools::intersperse(rows.iter().map(|s| s.as_str()), "\n").collect();
         output_dot += &format!(
@@ -156,7 +186,7 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
             node, node_text, lines
         );
 
-        if let Some(preds) = node_predecessors.get(node) {
+        if let Some(preds) = data.node_predecessors.get(node) {
             for pred in preds {
                 output_dot += &format!("    {} -> {}", pred, node);
             }
