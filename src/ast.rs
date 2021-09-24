@@ -63,17 +63,26 @@ pub enum AccessKind {
 
 #[derive(Clone, Debug)]
 pub enum Ty {
-    Borrow { origin: Name, ty: Box<Ty> },
+    Ref {
+        origin: Name,
+        ty: Box<Ty>,
+    },
 
-    BorrowMut { origin: Name, ty: Box<Ty> },
+    RefMut {
+        origin: Name,
+        ty: Box<Ty>,
+    },
 
     I32,
 
-    Struct { name: Name, parameters: Vec<Param> },
+    Struct {
+        name: Name,
+        parameters: Vec<Parameter>,
+    },
 }
 
 #[derive(Clone, Debug)]
-pub enum Param {
+pub enum Parameter {
     Origin(Name),
     Ty(Ty),
 }
