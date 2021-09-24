@@ -71,7 +71,11 @@ fn borrow_test() {
             x = 22
             y = &'y x
             z = &'z mut x
+            goto bb1, bb2
         }
+
+        bb1: { }
+        bb2: { }
     ",
     );
 
@@ -125,6 +129,19 @@ fn borrow_test() {
                             },
                         ),
                     ],
+                    successors: [
+                        "bb1",
+                        "bb2",
+                    ],
+                },
+                BasicBlock {
+                    name: "bb1",
+                    statements: [],
+                    successors: [],
+                },
+                BasicBlock {
+                    name: "bb2",
+                    statements: [],
                     successors: [],
                 },
             ],
