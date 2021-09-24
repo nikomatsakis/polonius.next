@@ -97,12 +97,12 @@ origin_invalidated(O2, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
   !clear_origin(O2, N1),
   subset(O1, O2, N1),
-  invalidate_origin(L, O1).
+  invalidate_origin(O1, N1).
 
 origin_invalidated(O, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
   !clear_origin(O, N1),
-  invalidate_origin(L, O, N1).
+  invalidate_origin(O, N1).
 
 /////////////////////////////////////////////////////
 .decl invalidated_origin_accessed(o: Origin, n: Node)
