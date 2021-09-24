@@ -93,16 +93,17 @@ subset(O1, O3, N1) :- // Transitive closure
 .decl origin_invalidated(o: Origin, n: Node)
 .output origin_invalidated
 
-origin_invalidated(O2, N2) :- // Introduced by predecessor
-  cfg_edge(N1, N2),
-  !clear_origin(O2, N1),
-  subset(O1, O2, N1),
-  invalidate_origin(O1, N1).
+// If origin O1 is invalidated on entry to node N,
+// and O1 <= O2 in node N,
+// then O2 is invalidated on entry.
+origin_invalidated(O2, N) :-
+  subset(O1, O2, N),
+  origin_invalidated(O1, N).
 
 origin_invalidated(O, N2) :- // Introduced by predecessor
   cfg_edge(N1, N2),
   !clear_origin(O, N1),
-  invalidate_origin(O, N1).
+  (invalidate_origin(O, N1); origin_invalidated(O, N1)).
 
 /////////////////////////////////////////////////////
 .decl invalidated_origin_accessed(o: Origin, n: Node)
