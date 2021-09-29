@@ -11,5 +11,9 @@ eyre = "0.6.5"
 itertools = "0.10"
 bumpalo = { version = "3.7.1", features = ["collections"] }
 
+# Graphviz
+glob = "0.3"
+html-escape = "0.2"
+
 [dev-dependencies]
 insta = "1.8.0"
