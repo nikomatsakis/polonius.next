@@ -9,10 +9,6 @@
 //! String     := "[^"]*"   /* regular expression */
 //! ```
 
-use eyre::WrapErr;
-use itertools::Itertools;
-use std::collections::HashMap;
-use std::path::Path;
 use std::str::FromStr;
 
 use crate::ast;
