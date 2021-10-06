@@ -1,0 +1,64 @@
+// let p = 22;
+// let q = 44;
+// let mut x: &i32 = &p; // `x` points at `p`
+// x = &q; // `x` points at `q`
+// p += 1; // OK, because `x` no longer borrows `p`
+// use(x); // also OK
+
+// Decls
+// let p: u32
+// let q: u32
+// let x: &'x mut u32
+// 
+// Loan origins:
+// 'L_p: `x`'s borrow of `p` 
+// 'L_q: `x`'s borrow of `q`
+
+a: "p = 22" {
+    invalidate_origin('L_p)
+    goto b
+}
+
+b: "q = 44" {
+    invalidate_origin('L_q)
+    goto c
+}
+
+c: "x = &'L_p p" {
+    // Clear all origins in `x` (overwritten plan):
+    clear_origin('x)
+
+    // Clear 'L_p because it's being recreated
+    clear_origin('L_p)
+
+    // `&'L_p u32 <: &'x u32`
+    introduce_subset('L_p, 'x) 
+    goto d
+}
+
+d: "x = &'L_q q" {
+    // Clear all origins in `x` (overwritten plan):
+    clear_origin('x)
+
+    // Clear 'L_q because it's being recreated
+    clear_origin('L_q)
+
+    // `&'L_q u32 <: &'x u32`
+    introduce_subset('L_q, 'x) 
+    goto e
+}
+
+e: "p += 1" {
+    // Access `p` where `p: u32`
+    
+    // Invalidate borrows of `p`
+    invalidate_origin('L_p)
+
+    goto f
+}
+
+f: "use(x)" {
+    // Access `x` [== `&q`] where `x: &'x mut u32`
+    access_origin('x)
+    goto
+}
