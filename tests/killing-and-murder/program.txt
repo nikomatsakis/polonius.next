@@ -1,0 +1,88 @@
+// let p = 22;
+// let q = 44;
+// let mut x: &mut i32 = &mut p; // `x` points at `p`
+// let y = &mut *x; // Loan L0, `y` points at `p` too
+// // ...
+// x = &mut q; // `x` points at `q`; clears L0
+// *y = 11; // OK, because `x` no longer borrows `p`
+// use(x); // also OK
+
+// Decls
+// let p: u32
+// let q: u32
+// let x: &'x mut u32
+// let y: &'y mut u32
+// 
+// Loan origins:
+// 'L_p: `x`'s borrow of `p` 
+// 'L_*x: `y`'s borrow of `*x`
+// 'L_q: `x`'s borrow of `q`
+
+a: "p = 22" {
+    invalidate_origin('L_p)
+    goto b
+}
+
+b: "q = 44" {
+    invalidate_origin('L_q)
+    goto c
+}
+
+c: "x = &'L_p mut p" {
+    // Clear all origins in `x` (overwritten plan):
+    clear_origin('x)
+
+    // Clear 'L_p because it's being recreated
+    clear_origin('L_p)
+
+    // `&'L_p mut u32 <: &'x mut u32`
+    introduce_subset('L_p, 'x) 
+    goto d
+}
+
+d: "y = &'L_*x mut *x" {
+    // Access `*x` [== `p`] where `x: &'x mut u32`
+    access_origin('x)
+    invalidate_origin('L_*x)
+
+    // Clear all origins in `y` (overwritten plan):
+    clear_origin('y)
+
+    // Clear 'L_*x because it's being recreated
+    clear_origin('L_*x)
+
+    // Unroll `*x`
+    introduce_subset('L_*x, 'x)
+
+    // `&'L_*x mut u32 <: &'y mut u32`
+    introduce_subset('L_*x, 'y) 
+    goto e
+}
+
+e: "x = &'L_q mut q" {
+    // Clear all origins in `x` (overwritten plan):
+    clear_origin('x)
+
+    // Clear 'L_q because it's being recreated
+    clear_origin('L_q)
+
+    // `&'L_q mut u32 <: &'x mut u32`
+    introduce_subset('L_q, 'x) 
+    goto f
+}
+
+f: "*y = 11" {
+    // Access `*y` [== `p`] where `y: &'y mut u32`
+    access_origin('y)
+
+    // Invalidate borrows of the target of `y`, which is `*x`
+    invalidate_origin('L_*x)
+    
+    goto g
+}
+
+g: "use(x)" {
+    // Access `x` [== `&mut q`] where `x: &'x mut u32`
+    access_origin('x)
+    goto
+}

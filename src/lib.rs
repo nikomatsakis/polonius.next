@@ -44,7 +44,7 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
                 path.join("invalidated_origin_accessed.csv"),
             ])
             .status()
-            .wrap_err("failed to run diff")?;
+            .wrap_err("failed to copy blessed output")?;
         if !status.success() {
             eyre::bail!("failed to bless output");
         }
