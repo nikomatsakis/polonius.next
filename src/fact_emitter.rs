@@ -62,10 +62,9 @@ impl FactEmitter {
                     let is_ref = matches!(v.ty, Ty::Ref { .. } | Ty::RefMut { .. });
                     if is_ref {
                     } else {
-                        println!("{:?} invalidate_origin L'_{}", s, v.name);
                         facts
                             .invalidate_origin
-                            .push((format!("L'_{}", v.name), node_at(&bb.name, idx)));
+                            .push((format!("'L_{}", v.name), node_at(&bb.name, idx)));
                     }
 
                     // Introduce subsets: `expr` flows into `place`
