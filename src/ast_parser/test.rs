@@ -19,7 +19,7 @@ fn expect_parse(s: &str) -> ast::Program {
 fn let_test() {
     let p = expect_parse(
         "
-        let x: i32; 
+        let x: i32;
     ",
     );
 
@@ -286,7 +286,7 @@ fn struct_test() {
     let p = expect_parse(
         "struct Iter<'me, T> { vec: &'me Vec<T>, position: i32 }
         struct Vec<T> { item0: T }
-        
+
     ",
     );
 
@@ -647,7 +647,7 @@ fn example_issue_47680() {
             goto bb1;
         }
 
-        bb1: {            
+        bb1: {
             t0 = &'L_*temp mut *temp;
             v = MaybeNext(move t0);
             goto bb2, bb3;
@@ -737,8 +737,8 @@ fn example_issue_47680() {
                 statements: [
                     Spanned {
                         span: Span {
-                            start: 227,
-                            end: 252,
+                            start: 215,
+                            end: 240,
                         },
                         inner: Assign(
                             Place {
@@ -758,8 +758,8 @@ fn example_issue_47680() {
                     },
                     Spanned {
                         span: Span {
-                            start: 265,
-                            end: 288,
+                            start: 253,
+                            end: 276,
                         },
                         inner: Assign(
                             Place {
@@ -791,8 +791,8 @@ fn example_issue_47680() {
                 statements: [
                     Spanned {
                         span: Span {
-                            start: 354,
-                            end: 368,
+                            start: 342,
+                            end: 356,
                         },
                         inner: Assign(
                             Place {
