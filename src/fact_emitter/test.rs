@@ -16,6 +16,18 @@ fn expect_facts(program: &str) -> Facts {
     }
 }
 
+// Returns the type of the given place's path in the given program.
+fn ty_of_place(program: &str, path: &str) -> ast::Ty {
+    let program = parse_ast(program).expect("Unexpected parsing error");
+    let emitter = FactEmitter { program };
+
+    let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
+    let base = path.remove(0);
+    let place = ast::Place { base, fields: path };
+
+    emitter.ty_of_place(&place)
+}
+
 #[test]
 fn type_of_vars() {
     // type
@@ -113,14 +125,74 @@ fn type_of_fields() {
     assert_eq!(ty_of_place(program, "a.b.c.d"), ast::Ty::I32);
 }
 
-// Returns the type of the given place's path in the given program.
-fn ty_of_place(program: &str, path: &str) -> ast::Ty {
-    let program = parse_ast(program).expect("Unexpected parsing error");
-    let emitter = FactEmitter { program };
+#[test]
+fn example_vec_temp() {
+    let program = "
+        let x: i32;
+        let v: Vec<&'v mut i32>;
+        let p: &'p i32;
+        let tmp: &'tmp0 mut Vec<&'tmp1 mut i32>;
 
-    let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
-    let base = path.remove(0);
-    let place = ast::Place { base, fields: path };
-
-    emitter.ty_of_place(&place)
+        bb0: {
+            x = 22;
+            v = Vec_new();
+            p = &'L_x x;
+            tmp = &'L_v mut v;
+            Vec_push(move tmp, move p);
+            x = 44;
+            Vec_len(copy v);
+        }
+    ";
+    assert_debug_snapshot!(expect_facts(program), @r###"
+    Facts {
+        access_origin: [],
+        cfg_edge: [
+            (
+                "bb0[0]",
+                "bb0[1]",
+            ),
+            (
+                "bb0[1]",
+                "bb0[2]",
+            ),
+            (
+                "bb0[2]",
+                "bb0[3]",
+            ),
+            (
+                "bb0[3]",
+                "bb0[4]",
+            ),
+            (
+                "bb0[4]",
+                "bb0[5]",
+            ),
+            (
+                "bb0[5]",
+                "bb0[6]",
+            ),
+        ],
+        clear_origin: [
+            (
+                "'L_x",
+                "bb0[2]",
+            ),
+        ],
+        introduce_subset: [],
+        invalidate_origin: [
+            (
+                "'L_x",
+                "bb0[0]",
+            ),
+            (
+                "'L_v",
+                "bb0[1]",
+            ),
+            (
+                "'L_x",
+                "bb0[5]",
+            ),
+        ],
+    }
+    "###);
 }
