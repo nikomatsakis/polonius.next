@@ -429,7 +429,6 @@ fn example_vec_temp() {
         let v: Vec<&'v mut i32>;
         let p: &'p i32;
         let tmp: &'tmp0 mut Vec<&'tmp1 mut i32>;
-        let len: i32;
 
         bb0: {
             x = 22;
@@ -438,7 +437,7 @@ fn example_vec_temp() {
             tmp = &'L_v mut v;
             Vec_push(move tmp, move p);
             x = 44;
-            len = Vec_len(copy v);
+            Vec_len(copy v);
         }
     ");
     insta::assert_debug_snapshot!(p, @r###"
@@ -488,10 +487,6 @@ fn example_vec_temp() {
                     },
                 },
             },
-            VariableDecl {
-                name: "len",
-                ty: I32,
-            },
         ],
         basic_blocks: [
             BasicBlock {
@@ -499,8 +494,8 @@ fn example_vec_temp() {
                 statements: [
                     Spanned {
                         span: Span {
-                            start: 177,
-                            end: 184,
+                            start: 155,
+                            end: 162,
                         },
                         inner: Assign(
                             Place {
@@ -514,8 +509,8 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 197,
-                            end: 211,
+                            start: 175,
+                            end: 189,
                         },
                         inner: Assign(
                             Place {
@@ -530,8 +525,8 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 224,
-                            end: 236,
+                            start: 202,
+                            end: 214,
                         },
                         inner: Assign(
                             Place {
@@ -551,8 +546,8 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 249,
-                            end: 267,
+                            start: 227,
+                            end: 245,
                         },
                         inner: Assign(
                             Place {
@@ -572,8 +567,8 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 280,
-                            end: 307,
+                            start: 258,
+                            end: 285,
                         },
                         inner: Expr(
                             Call {
@@ -599,8 +594,8 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 320,
-                            end: 327,
+                            start: 298,
+                            end: 305,
                         },
                         inner: Assign(
                             Place {
@@ -614,14 +609,10 @@ fn example_vec_temp() {
                     },
                     Spanned {
                         span: Span {
-                            start: 340,
-                            end: 362,
+                            start: 318,
+                            end: 334,
                         },
-                        inner: Assign(
-                            Place {
-                                base: "len",
-                                fields: [],
-                            },
+                        inner: Expr(
                             Call {
                                 name: "Vec_len",
                                 arguments: [

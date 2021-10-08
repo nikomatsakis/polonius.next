@@ -50,18 +50,21 @@ impl FactEmitter {
                     // Evaluate the `expr`
                     self.emit_expr_facts(bb, idx, expr, facts);
 
-                    // Assignments to non-references invalidate the loan origin
-
-                    // TODO: handle assignments to fields. what is their loan origin?
-                    let v = self
-                        .program
-                        .variables
-                        .iter()
-                        .find(|v| v.name == place.base)
-                        .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
-                    let is_ref = matches!(v.ty, Ty::Ref { .. } | Ty::RefMut { .. });
+                    let ty = self.ty_of_place(place);
+                    let is_ref = matches!(ty, Ty::Ref { .. } | Ty::RefMut { .. });
                     if is_ref {
                     } else {
+                        // Assignments to non-references invalidate the loan origin
+                        //
+                        // TODO: handle assignments to fields. What is their loan origin?
+                        // Until then: only support assignments to variables, and use their
+                        // name as the loan origin name.
+                        let v = self
+                            .program
+                            .variables
+                            .iter()
+                            .find(|v| v.name == place.base)
+                            .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
                         facts
                             .invalidate_origin
                             .push((format!("'L_{}", v.name), node_at(&bb.name, idx)));
@@ -81,10 +84,9 @@ impl FactEmitter {
             Expr::Access { kind, .. } => {
                 // Borrowing clears its origin
                 if let AccessKind::Borrow(origin) = kind {
-                    facts.clear_origin.push((
-                        origin.to_owned(),
-                        node_at(&bb.name, idx),
-                    ));
+                    facts
+                        .clear_origin
+                        .push((origin.to_owned(), node_at(&bb.name, idx)));
                 }
             }
 
