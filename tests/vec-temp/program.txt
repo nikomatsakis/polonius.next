@@ -44,6 +44,7 @@ c: "p = &'L_x x" {
 }
 
 d: "tmp = &'L_v mut v" {
+    // FIXME: `tmp` is overwritten, `'tmp0` and `'tmp1` should be cleared here
     access_origin('v)
     invalidate_origin('L_v)
     clear_origin('L_v)
