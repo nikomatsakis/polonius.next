@@ -53,6 +53,17 @@ impl FactEmitter {
                     let ty = self.ty_of_place(place);
                     let is_ref = matches!(ty, Ty::Ref { .. } | Ty::RefMut { .. });
                     if is_ref {
+                        // Assignments to references clear all origins in their type
+                        //
+                        // TODO: actually clear all origins in `ty` and not just the root
+                        match &ty {
+                            Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
+                                facts
+                                    .clear_origin
+                                    .push((origin.to_owned(), node_at(&bb.name, idx)));
+                            }
+                            _ => {}
+                        }
                     } else {
                         // Assignments to non-references invalidate the loan origin
                         //

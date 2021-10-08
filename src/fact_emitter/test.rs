@@ -177,6 +177,14 @@ fn example_vec_temp() {
                 "'L_x",
                 "bb0[2]",
             ),
+            (
+                "'p",
+                "bb0[2]",
+            ),
+            (
+                "'tmp0",
+                "bb0[3]",
+            ),
         ],
         introduce_subset: [],
         invalidate_origin: [
@@ -261,7 +269,24 @@ fn example_issue_47680() {
                 "bb1[0]",
             ),
         ],
-        clear_origin: [],
+        clear_origin: [
+            (
+                "'temp",
+                "bb0[0]",
+            ),
+            (
+                "'t0",
+                "bb1[0]",
+            ),
+            (
+                "'v",
+                "bb1[1]",
+            ),
+            (
+                "'temp",
+                "bb2[0]",
+            ),
+        ],
         introduce_subset: [],
         invalidate_origin: [],
     }
