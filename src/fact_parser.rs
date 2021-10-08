@@ -25,6 +25,7 @@ pub struct Statement {
     pub successors: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct Fact {
     pub name: String,
     pub arguments: Vec<String>,

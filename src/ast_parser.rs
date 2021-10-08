@@ -157,6 +157,6 @@ peg::parser! {
     }
 }
 
-fn parse_ast(input: &str) -> eyre::Result<ast::Program> {
+pub fn parse_ast(input: &str) -> eyre::Result<ast::Program> {
     Ok(ast_parser::program(input)?)
 }
