@@ -123,6 +123,9 @@ impl FactEmitter {
                     //
                     // TODO: handles simple subsets only for now, complete this.
                     //
+                    // TODO: if the `expr` is a call, we probably also need subsets between
+                    // the arguments, the return value and the LHS ?
+                    //
                     // We're in an assignment and we assume the LHS and RHS have the same shape,
                     // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
                     //
@@ -234,10 +237,15 @@ impl FactEmitter {
                 }
             }
 
-            // Calls evaluate their arguments
-            Expr::Call { arguments, .. } => arguments
-                .iter()
-                .for_each(|expr| self.emit_expr_facts(bb, idx, expr, facts)),
+            Expr::Call { arguments, .. } => {
+                // Calls evaluate their arguments
+                arguments
+                    .iter()
+                    .for_each(|expr| self.emit_expr_facts(bb, idx, expr, facts));
+
+                // TODO: Depending on the signature of the function, some subsets can be introduced
+                // between the arguments to the call
+            }
 
             _ => {}
         }
