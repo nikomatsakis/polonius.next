@@ -100,6 +100,9 @@ impl FactEmitter {
                     } else {
                         // Assignments to non-references invalidate the loan origin
                         //
+                        // TODO: if nothing is borrowing from the value, we probably 
+                        // don't need to do this invalidation or propagate it.
+                        //
                         // TODO: handle assignments to fields. What is their loan origin?
                         // Until then: only support assignments to variables, and use their
                         // name as the loan origin name.
