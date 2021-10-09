@@ -242,7 +242,16 @@ fn example_issue_47680() {
     ";
     assert_debug_snapshot!(expect_facts(program), @r###"
     Facts {
-        access_origin: [],
+        access_origin: [
+            (
+                "'t0",
+                "bb1[1]",
+            ),
+            (
+                "'v",
+                "bb2[0]",
+            ),
+        ],
         cfg_edge: [
             (
                 "bb0[0]",

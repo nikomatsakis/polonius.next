@@ -125,16 +125,33 @@ impl FactEmitter {
 
     fn emit_expr_facts(&self, bb: &BasicBlock, idx: usize, expr: &Expr, facts: &mut Facts) {
         match expr {
-            Expr::Access { kind, .. } => {
-                // Borrowing clears its origin: it's issuing a fresh origin of the same name
+            Expr::Access { kind, place } => {
                 match kind {
+                    // Borrowing clears its origin: it's issuing a fresh origin of the same name
                     AccessKind::Borrow(origin) | AccessKind::BorrowMut(origin) => {
                         facts
                             .clear_origin
                             .push((origin.into(), node_at(&bb.name, idx)));
                     }
 
-                    _ => {}
+                    AccessKind::Copy | AccessKind::Move => {
+                        // FIXME: currently function call parameters are not parsed without access
+                        // kinds, check if there's some special behaviour needed for copy/moves,
+                        // instead of just being "reads" (e.g. maybe moves also need clearing
+                        // or invalidations)
+
+                        // Reading a reference accesses its origin
+                        // TODO: it probably accesses _all_ the origins in its type
+                        match self.ty_of_place(place) {
+                            Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
+                                facts
+                                    .access_origin
+                                    .push((origin.into(), node_at(&bb.name, idx)));
+                            }
+
+                            _ => {}
+                        }
+                    }
                 }
             }
 
