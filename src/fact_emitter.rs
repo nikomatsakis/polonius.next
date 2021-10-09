@@ -202,14 +202,14 @@ impl FactEmitter {
             .find(|v| v.name == place.base)
             .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
 
-        let mut ty = &v.ty;
-
-        // If there are any fields, then this must be a struct
-        if !place.fields.is_empty() {
-            assert!(matches!(ty, Ty::Struct { .. }));
+        let ty = if place.fields.is_empty() {
+            &v.ty
+        } else {
+            // If there are any fields, then this must be a struct
+            assert!(matches!(v.ty, Ty::Struct { .. }));
 
             // Find the type of each field in sequence, to return the last field's type
-            for field_name in &place.fields {
+            place.fields.iter().fold(&v.ty, |ty, field_name| {
                 // Find the struct decl for the current step's ty
                 let (struct_name, struct_substs) = match ty {
                     Ty::Struct { name, parameters } => (name, parameters),
@@ -235,28 +235,19 @@ impl FactEmitter {
 
                 // It's possible that the field has a generic type, which we need to substitute
                 // with the matching type from the struct's arguments
-                ty = match &field.ty {
+                match &field.ty {
                     Ty::Struct {
                         name: field_ty_name,
                         ..
                     } => {
-                        if let Some(idx) =
-                            decl.generic_decls
-                                .iter()
-                                .enumerate()
-                                .find_map(|(idx, d)| match d {
-                                    GenericDecl::Ty(param_ty_name)
-                                        if param_ty_name == field_ty_name =>
-                                    {
-                                        Some(idx)
-                                    }
-                                    _ => None,
-                                })
-                        {
+                        if let Some(idx) = decl.generic_decls.iter().position(|d| match d {
+                            GenericDecl::Ty(param_ty_name) => param_ty_name == field_ty_name,
+                            _ => false,
+                        }) {
                             // We found the field ty in the generic decls, so return the subst
                             // at the same index
                             match &struct_substs[idx] {
-                                Parameter::Ty(ty) => ty,
+                                Parameter::Ty(subst_ty) => subst_ty,
 
                                 // TODO: handle generic origins
                                 _ => panic!("The parameter at idx {} should be a Ty", idx),
@@ -267,9 +258,9 @@ impl FactEmitter {
                         }
                     }
                     _ => &field.ty,
-                };
-            }
-        }
+                }
+            })
+        };
 
         ty.clone()
     }
