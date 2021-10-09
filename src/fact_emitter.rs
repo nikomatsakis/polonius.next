@@ -121,7 +121,12 @@ impl FactEmitter {
                     let _lhs_ty = self.ty_of_place(place);
                 }
 
-                Statement::Expr(_expr) => {}
+                Statement::Expr(expr) => {
+                    // Evaluate the `expr`
+                    self.emit_expr_facts(bb, idx, expr, facts);
+
+                    // TODO: is there something more to do because we're in a "drop" ?
+                }
             }
         }
     }

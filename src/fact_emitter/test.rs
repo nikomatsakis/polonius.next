@@ -145,7 +145,16 @@ fn example_vec_temp() {
     ";
     assert_debug_snapshot!(expect_facts(program), @r###"
     Facts {
-        access_origin: [],
+        access_origin: [
+            (
+                "'tmp0",
+                "bb0[4]",
+            ),
+            (
+                "'p",
+                "bb0[4]",
+            ),
+        ],
         cfg_edge: [
             (
                 "bb0[0]",
