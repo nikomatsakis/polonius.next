@@ -3,11 +3,44 @@ mod test;
 
 use crate::ast::{self, *};
 use crate::ast_parser::parse_ast;
+use std::fmt;
 
-type Origin = String;
-type Node = String;
+#[derive(Default, PartialEq, Eq)]
+struct Origin(String);
 
-#[allow(dead_code)]
+#[derive(Default, PartialEq, Eq)]
+struct Node(String);
+
+impl<S> From<S> for Origin
+where
+    S: AsRef<str> + ToString,
+{
+    fn from(s: S) -> Self {
+        Self(s.to_string())
+    }
+}
+
+impl fmt::Debug for Origin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl<S> From<S> for Node
+where
+    S: AsRef<str> + ToString,
+{
+    fn from(s: S) -> Self {
+        Self(s.to_string())
+    }
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
 #[derive(Default, Debug)]
 struct Facts {
     access_origin: Vec<(Origin, Node)>,
@@ -60,7 +93,7 @@ impl FactEmitter {
                             Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
                                 facts
                                     .clear_origin
-                                    .push((origin.to_owned(), node_at(&bb.name, idx)));
+                                    .push((origin.into(), node_at(&bb.name, idx)));
                             }
                             _ => {}
                         }
@@ -78,7 +111,7 @@ impl FactEmitter {
                             .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
                         facts
                             .invalidate_origin
-                            .push((format!("'L_{}", v.name), node_at(&bb.name, idx)));
+                            .push((format!("'L_{}", v.name).into(), node_at(&bb.name, idx)));
                     }
 
                     // Introduce subsets: `expr` flows into `place`
@@ -97,7 +130,7 @@ impl FactEmitter {
                 if let AccessKind::Borrow(origin) = kind {
                     facts
                         .clear_origin
-                        .push((origin.to_owned(), node_at(&bb.name, idx)));
+                        .push((origin.into(), node_at(&bb.name, idx)));
                 }
             }
 
@@ -159,10 +192,7 @@ impl FactEmitter {
                     .iter()
                     .find(|s| &s.name == struct_name)
                     .unwrap_or_else(|| {
-                        panic!(
-                            "Can't find struct {} at field {} for place {:?}, ty: {:?}",
-                            struct_name, field_name, place, ty
-                        )
+                        panic!("Can't find struct {} at field {}", struct_name, field_name,)
                     });
 
                 // Find the expected named field inside the struct decl
@@ -217,5 +247,5 @@ impl FactEmitter {
 }
 
 fn node_at(block: &str, idx: usize) -> Node {
-    format!("{}[{}]", block, idx)
+    format!("{}[{}]", block, idx).into()
 }

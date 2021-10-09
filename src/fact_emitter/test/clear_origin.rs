@@ -17,8 +17,8 @@ fn assignments_to_references() {
         facts
             .clear_origin
             .into_iter()
-            .find(|(origin, _)| origin == "'ref"),
-        Some(("'ref".to_string(), "bb0[1]".to_string()))
+            .find(|(origin, _)| origin.0 == "'ref"),
+        Some(("'ref".into(), "bb0[1]".into()))
     );
 }
 
