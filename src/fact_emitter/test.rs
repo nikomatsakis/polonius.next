@@ -182,6 +182,10 @@ fn example_vec_temp() {
                 "bb0[2]",
             ),
             (
+                "'L_v",
+                "bb0[3]",
+            ),
+            (
                 "'tmp0",
                 "bb0[3]",
             ),
@@ -271,8 +275,16 @@ fn example_issue_47680() {
         ],
         clear_origin: [
             (
+                "'L_Thing",
+                "bb0[0]",
+            ),
+            (
                 "'temp",
                 "bb0[0]",
+            ),
+            (
+                "'L_*temp",
+                "bb1[0]",
             ),
             (
                 "'t0",

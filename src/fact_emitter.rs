@@ -126,11 +126,15 @@ impl FactEmitter {
     fn emit_expr_facts(&self, bb: &BasicBlock, idx: usize, expr: &Expr, facts: &mut Facts) {
         match expr {
             Expr::Access { kind, .. } => {
-                // Borrowing clears its origin
-                if let AccessKind::Borrow(origin) = kind {
-                    facts
-                        .clear_origin
-                        .push((origin.into(), node_at(&bb.name, idx)));
+                // Borrowing clears its origin: it's issuing a fresh origin of the same name
+                match kind {
+                    AccessKind::Borrow(origin) | AccessKind::BorrowMut(origin) => {
+                        facts
+                            .clear_origin
+                            .push((origin.into(), node_at(&bb.name, idx)));
+                    }
+
+                    _ => {}
                 }
             }
 
