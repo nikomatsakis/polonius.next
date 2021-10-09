@@ -80,45 +80,43 @@ impl FactEmitter {
 
             match &**s {
                 Statement::Assign(place, expr) => {
-                    // Evaluate the `expr`
+                    // Emit facts about the assignment RHS: evaluate the `expr`
                     self.emit_expr_facts(bb, idx, expr, facts);
 
-                    let ty = self.ty_of_place(place);
-                    let is_ref = matches!(ty, Ty::Ref { .. } | Ty::RefMut { .. });
-                    if is_ref {
-                        // Assignments to references clear all origins in their type
-                        //
-                        // TODO: actually clear all origins in `ty` and not just the root
-                        match &ty {
-                            Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
-                                facts
-                                    .clear_origin
-                                    .push((origin.into(), node_at(&bb.name, idx)));
-                            }
-                            _ => {}
+                    // Emit facts about the assignment LHS
+                    let lhs_ty = self.ty_of_place(place);
+                    match &lhs_ty {
+                        Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
+                            // Assignments to references clear all origins in their type
+                            //
+                            // TODO: actually clear all origins in `ty` and not just the root
+                            facts
+                                .clear_origin
+                                .push((origin.into(), node_at(&bb.name, idx)));
                         }
-                    } else {
-                        // Assignments to non-references invalidate the loan origin
-                        //
-                        // TODO: if nothing is borrowing from the value, we probably
-                        // don't need to do this invalidation or propagate it.
-                        //
-                        // TODO: handle assignments to fields. What is their loan origin?
-                        // Until then: only support assignments to variables, and use their
-                        // name as the loan origin name.
-                        let v = self
-                            .program
-                            .variables
-                            .iter()
-                            .find(|v| v.name == place.base)
-                            .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
-                        facts
-                            .invalidate_origin
-                            .push((format!("'L_{}", v.name).into(), node_at(&bb.name, idx)));
+
+                        _ => {
+                            // Assignments to non-references invalidate the loan origin
+                            //
+                            // TODO: if nothing is borrowing from the value, we probably
+                            // don't need to do this invalidation or propagate it.
+                            //
+                            // TODO: handle assignments to fields. What is their loan origin?
+                            // Until then: only support assignments to variables, and use their
+                            // name as the loan origin name.
+                            let v = self
+                                .program
+                                .variables
+                                .iter()
+                                .find(|v| v.name == place.base)
+                                .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
+                            facts
+                                .invalidate_origin
+                                .push((format!("'L_{}", v.name).into(), node_at(&bb.name, idx)));
+                        }
                     }
 
                     // Introduce subsets: `expr` flows into `place`
-                    let _lhs_ty = self.ty_of_place(place);
                 }
 
                 Statement::Expr(expr) => {
