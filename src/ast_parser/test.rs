@@ -424,7 +424,8 @@ fn fn_test() {
 
 #[test]
 fn example_vec_temp() {
-    let p = expect_parse("
+    let p = expect_parse(
+        "
         let x: i32;
         let v: Vec<&'v mut i32>;
         let p: &'p i32;
@@ -439,7 +440,8 @@ fn example_vec_temp() {
             x = 44;
             Vec_len(copy v);
         }
-    ");
+    ",
+    );
     insta::assert_debug_snapshot!(p, @r###"
     Program {
         struct_decls: [],
@@ -637,7 +639,8 @@ fn example_vec_temp() {
 
 #[test]
 fn example_issue_47680() {
-    let p = expect_parse("
+    let p = expect_parse(
+        "
         let temp: &'temp mut Thing;
         let t0: &'t0 mut Thing;
         let v: &'v mut Thing;
@@ -665,7 +668,8 @@ fn example_issue_47680() {
         bb4: {
             goto bb1;
         }
-    ");
+    ",
+    );
     insta::assert_debug_snapshot!(p, @r###"
     Program {
         struct_decls: [],
