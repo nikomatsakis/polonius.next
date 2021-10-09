@@ -101,7 +101,23 @@ fn issue_47680() {
                 "bb2[0]",
             ),
         ],
-        introduce_subset: [],
+        introduce_subset: [
+            (
+                "'L_Thing",
+                "'temp",
+                "bb0[0]",
+            ),
+            (
+                "'L_*temp",
+                "'t0",
+                "bb1[0]",
+            ),
+            (
+                "'v",
+                "'temp",
+                "bb2[0]",
+            ),
+        ],
         invalidate_origin: [],
     }
     "###);

@@ -76,7 +76,18 @@ fn vec_temp() {
                 "bb0[3]",
             ),
         ],
-        introduce_subset: [],
+        introduce_subset: [
+            (
+                "'L_x",
+                "'p",
+                "bb0[2]",
+            ),
+            (
+                "'L_v",
+                "'tmp0",
+                "bb0[3]",
+            ),
+        ],
         invalidate_origin: [
             (
                 "'L_x",
