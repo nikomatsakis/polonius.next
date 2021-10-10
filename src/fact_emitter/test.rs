@@ -10,7 +10,7 @@ mod example_issue_47680;
 mod example_vec_temp;
 
 use super::*;
-use insta::assert_debug_snapshot;
+use insta::{assert_debug_snapshot, assert_display_snapshot};
 
 fn expect_facts(program: &str) -> Facts {
     match emit_facts(program) {
@@ -128,4 +128,43 @@ fn type_of_fields() {
         let a: A<B<C<i32>>>;
     ";
     assert_eq!(ty_of_place(program, "a.b.c.d"), Ty::I32);
+}
+
+#[test]
+// Port of /polonius.next/tests/example-a/program.txt
+fn example_a() {
+    let program = "
+        let x: i32;
+        let y: &'y i32;
+
+        bb0: {
+            x = 3;
+            y = &'L_x x;
+            x = 4;
+            use(move y);
+        }
+    ";
+
+    assert_display_snapshot!(expect_facts(program), @r###"
+    bb0[0]: {
+    	invalidate_origin('L_x)
+    	goto bb0[1]
+    }
+
+    bb0[1]: {
+    	clear_origin('L_x)
+    	clear_origin('y)
+    	introduce_subset('L_x, 'y)
+    	goto bb0[2]
+    }
+
+    bb0[2]: {
+    	invalidate_origin('L_x)
+    	goto bb0[3]
+    }
+
+    bb0[3]: {
+    	access_origin('y)
+    }
+    "###);
 }
