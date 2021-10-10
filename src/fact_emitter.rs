@@ -53,7 +53,7 @@ struct Facts {
 #[allow(dead_code)]
 fn emit_facts(program: &str) -> eyre::Result<Facts> {
     let program = parse_ast(program)?;
-    let emitter = FactEmitter { program };
+    let emitter = FactEmitter::new(program);
     let mut facts = Default::default();
     emitter.emit_facts(&mut facts);
     Ok(facts)
@@ -64,6 +64,12 @@ struct FactEmitter {
 }
 
 impl FactEmitter {
+    fn new(program: Program) -> Self {
+        Self {
+            program
+        }
+    }
+
     fn emit_facts(&self, facts: &mut Facts) {
         for bb in &self.program.basic_blocks {
             self.emit_block_facts(bb, facts);

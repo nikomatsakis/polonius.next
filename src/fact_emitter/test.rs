@@ -24,7 +24,7 @@ fn expect_facts(program: &str) -> Facts {
 // Returns the type of the given place's path in the given program.
 fn ty_of_place(program: &str, path: &str) -> ast::Ty {
     let program = parse_ast(program).expect("Unexpected parsing error");
-    let emitter = FactEmitter { program };
+    let emitter = FactEmitter::new(program);
 
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
     let base = path.remove(0);
