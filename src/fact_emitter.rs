@@ -407,8 +407,12 @@ impl fmt::Display for Facts {
         // Until fact gen is complete, some nodes present in the input program may not
         // have corresponding facts here, so ensure nodes present in CFG edges are
         // created empty.
+        //
         // Single statement programs with no facts will still not create empty points though,
         // for that we could use the `ast::Program` as input for this impl.
+        //
+        // (And we then could add the decls as comments, like the examples currently have)
+        //
         for (node1, node2) in &self.cfg_edge {
             facts_per_node.entry(&node1.0).or_default();
             facts_per_node.entry(&node2.0).or_default();

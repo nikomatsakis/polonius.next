@@ -1,5 +1,5 @@
 use super::*;
-use insta::assert_debug_snapshot;
+use insta::assert_display_snapshot;
 
 #[test]
 // Port of /polonius.next/tests/issue-47680/program.txt
@@ -33,92 +33,40 @@ fn issue_47680() {
             goto bb1;
         }
     ";
-    assert_debug_snapshot!(expect_facts(program), @r###"
-    Facts {
-        access_origin: [
-            (
-                "'t0",
-                "bb1[1]",
-            ),
-            (
-                "'v",
-                "bb2[0]",
-            ),
-        ],
-        cfg_edge: [
-            (
-                "bb0[0]",
-                "bb1[0]",
-            ),
-            (
-                "bb1[0]",
-                "bb1[1]",
-            ),
-            (
-                "bb1[1]",
-                "bb2[0]",
-            ),
-            (
-                "bb1[1]",
-                "bb3[0]",
-            ),
-            (
-                "bb2[0]",
-                "bb4[0]",
-            ),
-            (
-                "bb3[0]",
-                "bb4[0]",
-            ),
-            (
-                "bb4[0]",
-                "bb1[0]",
-            ),
-        ],
-        clear_origin: [
-            (
-                "'L_Thing",
-                "bb0[0]",
-            ),
-            (
-                "'temp",
-                "bb0[0]",
-            ),
-            (
-                "'L_*temp",
-                "bb1[0]",
-            ),
-            (
-                "'t0",
-                "bb1[0]",
-            ),
-            (
-                "'v",
-                "bb1[1]",
-            ),
-            (
-                "'temp",
-                "bb2[0]",
-            ),
-        ],
-        introduce_subset: [
-            (
-                "'L_Thing",
-                "'temp",
-                "bb0[0]",
-            ),
-            (
-                "'L_*temp",
-                "'t0",
-                "bb1[0]",
-            ),
-            (
-                "'v",
-                "'temp",
-                "bb2[0]",
-            ),
-        ],
-        invalidate_origin: [],
+    assert_display_snapshot!(expect_facts(program), @r###"
+    bb0[0]: {
+    	clear_origin('L_Thing)
+    	clear_origin('temp)
+    	introduce_subset('L_Thing, 'temp)
+    	goto bb1[0]
+    }
+
+    bb1[0]: {
+    	clear_origin('L_*temp)
+    	clear_origin('t0)
+    	introduce_subset('L_*temp, 't0)
+    	goto bb1[1]
+    }
+
+    bb1[1]: {
+    	access_origin('t0)
+    	clear_origin('v)
+    	goto bb2[0] bb3[0]
+    }
+
+    bb2[0]: {
+    	access_origin('v)
+    	clear_origin('temp)
+    	introduce_subset('v, 'temp)
+    	goto bb4[0]
+    }
+
+    bb3[0]: {
+    	goto bb4[0]
+    }
+
+    bb4[0]: {
+    	goto bb1[0]
     }
     "###);
 }
