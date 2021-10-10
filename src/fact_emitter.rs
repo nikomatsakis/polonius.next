@@ -97,6 +97,9 @@ impl FactEmitter {
                     place,
                 } = expr
                 {
+                    // TODO: handle fields and loans taken on subsets of their paths. 
+                    // Until then: only support borrowing from complete places.
+                    //
                     // TODO: we probably also need to track the loan's mode, if we want to emit
                     // errors when mutably borrowing through a shared ref and the likes ?
                     loans
@@ -145,8 +148,8 @@ impl FactEmitter {
                             // Assignments to non-references invalidate loans borrowing from them.
                             //
                             // TODO: handle assignments to fields and loans taken on subsets of
-                            // paths. Until then: only support invalidations on assignments to
-                            // complete places.
+                            // their paths. Until then: only support invalidations on assignments
+                            // to complete places.
                             //
                             if let Some(loans) = self.loans.get(place) {
                                 for (origin, _location) in loans {
