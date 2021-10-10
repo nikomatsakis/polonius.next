@@ -404,6 +404,16 @@ impl fmt::Display for Facts {
         // Index facts to group them per node
         let mut facts_per_node: BTreeMap<&str, Vec<String>> = BTreeMap::new();
 
+        // Until fact gen is complete, some nodes present in the input program may not
+        // have corresponding facts here, so ensure nodes present in CFG edges are
+        // created empty.
+        // Single statement programs with no facts will still not create empty points though,
+        // for that we could use the `ast::Program` as input for this impl.
+        for (node1, node2) in &self.cfg_edge {
+            facts_per_node.entry(&node1.0).or_default();
+            facts_per_node.entry(&node2.0).or_default();
+        }
+
         for (origin, node) in &self.access_origin {
             facts_per_node
                 .entry(&node.0)
@@ -446,7 +456,7 @@ impl fmt::Display for Facts {
                 writeln!(f, "\t{}", fact)?;
             }
 
-            // And `goto` facts last, with their special syntax
+            // And `goto` facts last, with their special syntax.
             // TODO: is a `goto` required when there is no successor ?
             let mut has_successors = false;
             for (succ_idx, (_, succ)) in self
