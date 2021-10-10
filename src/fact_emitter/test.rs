@@ -22,13 +22,13 @@ fn expect_facts(program: &str) -> Facts {
 }
 
 // Returns the type of the given place's path in the given program.
-fn ty_of_place(program: &str, path: &str) -> ast::Ty {
+fn ty_of_place(program: &str, path: &str) -> Ty {
     let program = parse_ast(program).expect("Unexpected parsing error");
     let emitter = FactEmitter::new(program);
 
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
     let base = path.remove(0);
-    let place = ast::Place { base, fields: path };
+    let place = Place { base, fields: path };
 
     emitter.ty_of_place(&place)
 }
@@ -36,7 +36,7 @@ fn ty_of_place(program: &str, path: &str) -> ast::Ty {
 #[test]
 fn type_of_vars() {
     // type
-    assert_eq!(ty_of_place("let x: i32;", "x"), ast::Ty::I32);
+    assert_eq!(ty_of_place("let x: i32;", "x"), Ty::I32);
 
     // struct
     let program = "
@@ -100,7 +100,7 @@ fn type_of_fields() {
         struct Vec { e: i32 }
         let v: Vec;
     ";
-    assert_eq!(ty_of_place(program, "v.e"), ast::Ty::I32);
+    assert_eq!(ty_of_place(program, "v.e"), Ty::I32);
 
     let program = "
         struct A { b: B }
@@ -119,7 +119,7 @@ fn type_of_fields() {
         struct A<T> { b: T }
         let a: A<i32>;
     ";
-    assert_eq!(ty_of_place(program, "a.b"), ast::Ty::I32);
+    assert_eq!(ty_of_place(program, "a.b"), Ty::I32);
 
     let program = "
         struct A<T> { b: T }
@@ -127,5 +127,5 @@ fn type_of_fields() {
         struct C<T> { d: T }
         let a: A<B<C<i32>>>;
     ";
-    assert_eq!(ty_of_place(program, "a.b.c.d"), ast::Ty::I32);
+    assert_eq!(ty_of_place(program, "a.b.c.d"), Ty::I32);
 }

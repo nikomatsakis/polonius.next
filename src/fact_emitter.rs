@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-use crate::ast::{self, *};
+use crate::ast::*;
 use crate::ast_parser::parse_ast;
 use std::fmt;
 
@@ -60,7 +60,7 @@ fn emit_facts(program: &str) -> eyre::Result<Facts> {
 }
 
 struct FactEmitter {
-    program: ast::Program,
+    program: Program,
 }
 
 impl FactEmitter {
