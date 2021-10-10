@@ -95,7 +95,7 @@ pub enum Parameter {
     Ty(Ty),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Place {
     pub base: Name,
     pub fields: Vec<Name>,

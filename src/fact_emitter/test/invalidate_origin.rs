@@ -11,14 +11,7 @@ fn assignment_to_non_references() {
             x = 22;
         }
     ";
-    assert_debug_snapshot!(expect_facts(program).invalidate_origin, @r###"
-    [
-        (
-            "'L_x",
-            "bb0[0]",
-        ),
-    ]
-    "###);
+    assert_debug_snapshot!(expect_facts(program).invalidate_origin, @"[]");
 
     // Function call return value
     let program = "
@@ -27,12 +20,5 @@ fn assignment_to_non_references() {
             v = Vec_new();
         }
     ";
-    assert_debug_snapshot!(expect_facts(program).invalidate_origin, @r###"
-    [
-        (
-            "'L_v",
-            "bb0[0]",
-        ),
-    ]
-    "###);
+    assert_debug_snapshot!(expect_facts(program).invalidate_origin, @"[]");
 }

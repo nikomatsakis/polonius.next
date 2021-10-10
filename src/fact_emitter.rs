@@ -3,9 +3,10 @@ mod test;
 
 use crate::ast::*;
 use crate::ast_parser::parse_ast;
+use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq, Clone)]
 struct Origin(String);
 
 #[derive(Default, PartialEq, Eq)]
@@ -59,15 +60,52 @@ fn emit_facts(program: &str) -> eyre::Result<Facts> {
     Ok(facts)
 }
 
+// An internal representation of a `Node`, a location in the CFG: the block within the program,
+// and the statement within that block. Used to analyze locations (e.g. reachability), whereas
+// `Node`s are user-readable representations for facts.
+#[allow(dead_code)]
+struct Location {
+    block_idx: usize,
+    statement_idx: usize,
+}
+
+impl From<(usize, usize)> for Location {
+    fn from((block_idx, statement_idx): (usize, usize)) -> Self {
+        Self {
+            block_idx,
+            statement_idx,
+        }
+    }
+}
+
 struct FactEmitter {
     program: Program,
+    loans: HashMap<Place, Vec<(Origin, Location)>>,
 }
 
 impl FactEmitter {
     fn new(program: Program) -> Self {
-        Self {
-            program
+        // Collect loans from borrow expressions present in the program
+        let mut loans: HashMap<Place, Vec<(Origin, Location)>> = HashMap::new();
+
+        for (block_idx, bb) in program.basic_blocks.iter().enumerate() {
+            for (statement_idx, s) in bb.statements.iter().enumerate() {
+                let (Statement::Assign(_, expr) | Statement::Expr(expr)) = &**s;
+
+                if let Expr::Access {
+                    kind: AccessKind::Borrow(origin) | AccessKind::BorrowMut(origin),
+                    place,
+                } = expr
+                {
+                    loans
+                        .entry(place.clone())
+                        .or_default()
+                        .push((origin.into(), (block_idx, statement_idx).into()));
+                }
+            }
         }
+
+        Self { program, loans }
     }
 
     fn emit_facts(&self, facts: &mut Facts) {
@@ -102,25 +140,22 @@ impl FactEmitter {
                         }
 
                         _ => {
-                            // Assignments to non-references invalidate the loan origin
+                            // Assignments to non-references invalidate loans borrowing from them.
                             //
-                            // TODO: handle assignments to fields.
+                            // TODO: handle assignments to fields and loans taken on subsets of
+                            // paths. Until then: only support invalidations on assignments to
+                            // complete places.
                             //
-                            // TMP: until then: only support assignments to variables, and use
-                            // their name as the loan origin name.
-                            //
-                            // TODO: collect the loan origins actually used in the program and
-                            // invalidate those. If nothing is borrowing from the value, we don't
-                            // need to do this invalidation or propagate it.
-                            let v = self
-                                .program
-                                .variables
-                                .iter()
-                                .find(|v| v.name == place.base)
-                                .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
-                            facts
-                                .invalidate_origin
-                                .push((format!("'L_{}", v.name).into(), node_at(&bb.name, idx)));
+                            if let Some(loans) = self.loans.get(place) {
+                                for (origin, _location) in loans {
+                                    // TODO: if the `location` where the loan was issued can't
+                                    // reach the current location, there is no need to emit
+                                    // the invalidation
+                                    facts
+                                        .invalidate_origin
+                                        .push((origin.clone(), node_at(&bb.name, idx)));
+                                }
+                            }
                         }
                     }
 
