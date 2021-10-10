@@ -97,6 +97,8 @@ impl FactEmitter {
                     place,
                 } = expr
                 {
+                    // TODO: we probably also need to track the loan's mode, if we want to emit
+                    // errors when mutably borrowing through a shared ref and the likes ?
                     loans
                         .entry(place.clone())
                         .or_default()
