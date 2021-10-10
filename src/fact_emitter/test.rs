@@ -68,30 +68,37 @@ fn type_of_vars() {
 
     // generic struct: origins
     let program = "
-        struct Vec<T> { e: T }
-        struct Ref<'a, T> { ref: &'a T }
-        let r: Ref<&'r Vec<i32>>;
+        struct Ref<'ref> { e: &'ref i32 }
+        let r: Ref<'static>;
     ";
     assert_debug_snapshot!(ty_of_place(program, "r"), @r###"
     Struct {
         name: "Ref",
         parameters: [
-            Ty(
-                Ref {
-                    origin: "'r",
-                    ty: Struct {
-                        name: "Vec",
-                        parameters: [
-                            Ty(
-                                I32,
-                            ),
-                        ],
-                    },
-                },
+            Origin(
+                "'static",
             ),
         ],
     }
     "###);
+
+    // TODO ?
+    // // generic struct: origins and types
+    // let program = "
+    //     struct Vec<T> { e: T }
+    //     struct Ref<'a, T> { ref: &'a T }
+    //     let r: Ref<'r, Vec<i32>>;
+    // ";
+    // assert_debug_snapshot!(ty_of_place(program, "r.ref"), @"");
+
+    // TODO ?
+    // // generic struct: origins and types, and derefs
+    // let program = "
+    //     struct Vec<T> { e: T }
+    //     struct Ref<'a, T> { ref: &'a T }
+    //     let r: Ref<'r, Vec<i32>>;
+    // ";
+    // assert_eq!(ty_of_place(program, "r.ref.e"), Ty::I32);
 }
 
 #[test]
