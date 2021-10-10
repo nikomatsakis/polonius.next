@@ -3,7 +3,7 @@ mod test;
 
 use crate::ast::*;
 use crate::ast_parser::parse_ast;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
 #[derive(Default, PartialEq, Eq, Clone)]
@@ -97,7 +97,7 @@ impl FactEmitter {
                     place,
                 } = expr
                 {
-                    // TODO: handle fields and loans taken on subsets of their paths. 
+                    // TODO: handle fields and loans taken on subsets of their paths.
                     // Until then: only support borrowing from complete places.
                     //
                     // TODO: we probably also need to track the loan's mode, if we want to emit
@@ -395,4 +395,81 @@ impl FactEmitter {
 
 fn node_at(block: &str, idx: usize) -> Node {
     format!("{}[{}]", block, idx).into()
+}
+
+// For readability purposes, and conversion to Soufflé facts, display the facts as the
+// textual format.
+impl fmt::Display for Facts {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Index facts to group them per node
+        let mut facts_per_node: BTreeMap<&str, Vec<String>> = BTreeMap::new();
+
+        for (origin, node) in &self.access_origin {
+            facts_per_node
+                .entry(&node.0)
+                .or_default()
+                .push(format!("access_origin({})", origin.0));
+        }
+
+        for (origin, node) in &self.clear_origin {
+            facts_per_node
+                .entry(&node.0)
+                .or_default()
+                .push(format!("clear_origin({})", origin.0));
+        }
+
+        for (origin, node) in &self.invalidate_origin {
+            facts_per_node
+                .entry(&node.0)
+                .or_default()
+                .push(format!("invalidate_origin({})", origin.0));
+        }
+
+        for (origin1, origin2, node) in &self.introduce_subset {
+            facts_per_node
+                .entry(&node.0)
+                .or_default()
+                .push(format!("introduce_subset({}, {})", origin1.0, origin2.0));
+        }
+
+        // Display the indexed data in the frontend format
+        for (node_idx, (node, facts)) in facts_per_node.into_iter().enumerate() {
+            if node_idx != 0 {
+                write!(f, "\n")?;
+            }
+
+            // TODO: also print `node_text` here, once we have it
+            writeln!(f, "{}: {{", node)?;
+
+            // Emit all facts first
+            for fact in facts {
+                writeln!(f, "\t{}", fact)?;
+            }
+
+            // And `goto` facts last, with their special syntax
+            // TODO: is a `goto` required when there is no successor ?
+            let mut has_successors = false;
+            for (succ_idx, (_, succ)) in self
+                .cfg_edge
+                .iter()
+                .filter(|(from, _)| from.0 == node)
+                .enumerate()
+            {
+                if succ_idx == 0 {
+                    has_successors = true;
+                    write!(f, "\tgoto")?;
+                }
+
+                write!(f, " {}", succ.0)?;
+            }
+
+            if has_successors {
+                write!(f, "\n")?;
+            }
+
+            writeln!(f, "}}")?;
+        }
+
+        Ok(())
+    }
 }
