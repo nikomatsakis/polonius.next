@@ -1,5 +1,5 @@
 use super::*;
-use insta::assert_debug_snapshot;
+use insta::assert_display_snapshot;
 
 #[test]
 // Port of /polonius.next/tests/vec-temp/program.txt
@@ -16,92 +16,47 @@ fn vec_temp() {
             p = &'L_x x;
             tmp = &'L_v mut v;
             Vec_push(move tmp, move p);
-            x = 44;
+            x = 23;
             Vec_len(copy v);
         }
     ";
-    assert_debug_snapshot!(expect_facts(program), @r###"
-    Facts {
-        access_origin: [
-            (
-                "'tmp0",
-                "bb0[4]",
-            ),
-            (
-                "'p",
-                "bb0[4]",
-            ),
-        ],
-        cfg_edge: [
-            (
-                "bb0[0]",
-                "bb0[1]",
-            ),
-            (
-                "bb0[1]",
-                "bb0[2]",
-            ),
-            (
-                "bb0[2]",
-                "bb0[3]",
-            ),
-            (
-                "bb0[3]",
-                "bb0[4]",
-            ),
-            (
-                "bb0[4]",
-                "bb0[5]",
-            ),
-            (
-                "bb0[5]",
-                "bb0[6]",
-            ),
-        ],
-        clear_origin: [
-            (
-                "'L_x",
-                "bb0[2]",
-            ),
-            (
-                "'p",
-                "bb0[2]",
-            ),
-            (
-                "'L_v",
-                "bb0[3]",
-            ),
-            (
-                "'tmp0",
-                "bb0[3]",
-            ),
-        ],
-        introduce_subset: [
-            (
-                "'L_x",
-                "'p",
-                "bb0[2]",
-            ),
-            (
-                "'L_v",
-                "'tmp0",
-                "bb0[3]",
-            ),
-        ],
-        invalidate_origin: [
-            (
-                "'L_x",
-                "bb0[0]",
-            ),
-            (
-                "'L_v",
-                "bb0[1]",
-            ),
-            (
-                "'L_x",
-                "bb0[5]",
-            ),
-        ],
+    assert_display_snapshot!(expect_facts(program), @r###"
+    bb0[0]: {
+    	invalidate_origin('L_x)
+    	goto bb0[1]
+    }
+
+    bb0[1]: {
+    	invalidate_origin('L_v)
+    	goto bb0[2]
+    }
+
+    bb0[2]: {
+    	clear_origin('L_x)
+    	clear_origin('p)
+    	introduce_subset('L_x, 'p)
+    	goto bb0[3]
+    }
+
+    bb0[3]: {
+    	clear_origin('L_v)
+    	clear_origin('tmp0)
+    	introduce_subset('L_v, 'tmp0)
+    	goto bb0[4]
+    }
+
+    bb0[4]: {
+    	access_origin('tmp0)
+    	access_origin('p)
+    	goto bb0[5]
+    }
+
+    bb0[5]: {
+    	invalidate_origin('L_x)
+    	goto bb0[6]
+    }
+
+    bb0[6]: {
     }
     "###);
 }
