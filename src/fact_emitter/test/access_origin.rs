@@ -131,3 +131,26 @@ fn function_calls_read_arguments() {
     ]
     "###);
 }
+
+#[test]
+fn mutable_borrows_are_considered_writes() {
+    // mutable ref of type with origins
+    let facts = expect_facts(
+        "
+        let v: Vec<&'v i32>;
+        let ref: &'ref mut Vec<&'data i32>;
+
+        bb0: {
+            ref = &'L_v mut v;
+        }
+    ",
+    );
+    assert_debug_snapshot!(facts.access_origin, @r###"
+    [
+        (
+            "'v",
+            "bb0[0]",
+        ),
+    ]
+    "###);
+}

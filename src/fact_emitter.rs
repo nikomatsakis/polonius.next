@@ -261,19 +261,15 @@ impl FactEmitter {
                             .push((origin.into(), node_at(&bb.name, idx)));
 
                         if matches!(kind, AccessKind::BorrowMut(_)) {
-                            // FIXME: the following requires parsing and understanding derefs,
-                            // otherwise the example issue-47680 will panic trying to access the
-                            // type and origins of `*temp` when mutably borrowing from it:
-                            // `t0 = &'L_*temp mut *temp;`
-                            // // A mutable borrow is considered a write to the place:
-                            // //
-                            // // 1) it accesses the origins in the type
-                            // let (_, origins) = self.ty_and_origins_of_place(place);
-                            // for origin in origins {
-                            //     facts
-                            //         .access_origin
-                            //         .push((origin.clone(), node_at(&bb.name, idx)));
-                            // }
+                            // A mutable borrow is considered a write to the place:
+                            //
+                            // 1) it accesses the origins in the type
+                            let (_, origins) = self.ty_and_origins_of_place(place);
+                            for origin in origins {
+                                facts
+                                    .access_origin
+                                    .push((origin.clone(), node_at(&bb.name, idx)));
+                            }
 
                             // 2) and invalidates existing loans of that place
                             //

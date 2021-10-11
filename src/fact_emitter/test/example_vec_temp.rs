@@ -40,6 +40,7 @@ fn vec_temp() {
     }
 
     bb0[3]: {
+    	access_origin('v)
     	clear_origin('L_v)
     	clear_origin('tmp0)
     	clear_origin('tmp1)

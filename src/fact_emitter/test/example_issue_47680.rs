@@ -44,6 +44,7 @@ fn issue_47680() {
     }
 
     bb1[0]: {
+    	access_origin('temp)
     	clear_origin('L_*temp)
     	clear_origin('t0)
     	invalidate_origin('L_*temp)
