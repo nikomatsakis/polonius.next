@@ -133,7 +133,7 @@ impl FactEmitter {
                     self.emit_expr_facts(bb, idx, expr, facts);
 
                     // Emit facts about the assignment LHS
-                    let lhs_ty = self.ty_of_place(place);
+                    let (lhs_ty, _) = self.ty_and_origins_of_place(place);
                     match &lhs_ty {
                         Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
                             // Assignments to references clear all origins in their type
@@ -208,7 +208,7 @@ impl FactEmitter {
                                     kind: AccessKind::Copy | AccessKind::Move,
                                     place,
                                 } => {
-                                    let rhs_ty = self.ty_of_place(place);
+                                    let (rhs_ty, _) = self.ty_and_origins_of_place(place);
                                     match rhs_ty {
                                         Ty::Ref {
                                             origin: source_origin,
@@ -272,7 +272,8 @@ impl FactEmitter {
 
                         // Reading a reference accesses its origin
                         // TODO: it probably accesses _all_ the origins in its type
-                        match self.ty_of_place(place) {
+                        let (ty, _) = self.ty_and_origins_of_place(place);
+                        match ty {
                             Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
                                 facts
                                     .access_origin
@@ -320,7 +321,9 @@ impl FactEmitter {
         }
     }
 
-    fn ty_of_place(&self, place: &Place) -> Ty {
+    fn ty_and_origins_of_place(&self, place: &Place) -> (Ty, Vec<Origin>) {
+        let mut origins = Vec::new();
+
         // The `base` is always a variable of the program
         let v = self
             .program
@@ -337,7 +340,10 @@ impl FactEmitter {
 
             // Find the type of each field in sequence, to return the last field's type
             place.fields.iter().fold(&v.ty, |ty, field_name| {
-                // Find the struct decl for the current step's ty
+                // Collect origins present in the current field parent's ty
+                ty.collect_origins_into(&mut origins);
+
+                // Find the struct decl for the parent's ty
                 let (struct_name, struct_substs) = match ty {
                     Ty::Struct { name, parameters } => (name, parameters),
                     _ => panic!("Ty {:?} must be a struct to access its fields", ty),
@@ -389,7 +395,37 @@ impl FactEmitter {
             })
         };
 
-        ty.clone()
+        // Collect origins for either:
+        // - the `base` ty, when there are no fields
+        // - the last field's ty, from the place's `fields` list. The origins of the previous
+        // fields in the list having already been collected just above.
+        ty.collect_origins_into(&mut origins);
+
+        (ty.clone(), origins)
+    }
+}
+
+impl Ty {
+    // Collects all the origins present in this type, recursively.
+    fn collect_origins_into(&self, origins: &mut Vec<Origin>) {
+        match self {
+            Ty::Ref { origin, ty } | Ty::RefMut { origin, ty } => {
+                origins.push(origin.into());
+                ty.collect_origins_into(origins);
+            }
+
+            Ty::Struct { parameters, .. } => {
+                for param in parameters {
+                    match param {
+                        Parameter::Origin(origin) => origins.push(origin.into()),
+                        Parameter::Ty(ty) => ty.collect_origins_into(origins),
+                    }
+                }
+            }
+
+            Ty::I32 => {}
+            Ty::Unit => {}
+        }
     }
 }
 
