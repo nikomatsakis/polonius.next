@@ -27,6 +27,7 @@ fn vec_temp() {
     }
 
     bb0[1]: {
+    	clear_origin('v)
     	invalidate_origin('L_v)
     	goto bb0[2]
     }

@@ -52,10 +52,26 @@ fn all_origins_in_type_are_cleared_on_assignments_to_references() {
     "###);
 }
 
-// #[test]
-// fn all_origins_in_type_are_cleared_on_assignments() {
-//     // TODO
-// }
+#[test]
+fn all_origins_in_type_are_cleared_on_assignments() {
+    let facts = expect_facts(
+        "
+        let v: Vec<&'v i32>;
+
+        bb0: {
+            v = Vec_new();
+        }
+    ",
+    );
+    assert_debug_snapshot!(facts.clear_origin, @r###"
+    [
+        (
+            "'v",
+            "bb0[0]",
+        ),
+    ]
+    "###);
+}
 
 #[test]
 fn shared_borrows_clear_their_origin() {

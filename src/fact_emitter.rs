@@ -134,14 +134,15 @@ impl FactEmitter {
 
                     // Emit facts about the assignment LHS
                     let (lhs_ty, lhs_origins) = self.ty_and_origins_of_place(place);
-                    if lhs_ty.is_ref() {
-                        // Assignments to references clear all origins in their type
-                        for origin in &lhs_origins {
-                            facts
-                                .clear_origin
-                                .push((origin.clone(), node_at(&bb.name, idx)));
-                        }
-                    } else {
+
+                    // Assignments clear all origins in the type
+                    for origin in &lhs_origins {
+                        facts
+                            .clear_origin
+                            .push((origin.clone(), node_at(&bb.name, idx)));
+                    }
+
+                    if !lhs_ty.is_ref() {
                         // Assignments to non-references invalidate loans borrowing from them.
                         //
                         // TODO: handle assignments to fields and loans taken on subsets of
