@@ -259,6 +259,40 @@ impl FactEmitter {
                         facts
                             .clear_origin
                             .push((origin.into(), node_at(&bb.name, idx)));
+
+                        // FIXME: the following requires parsing and understanding derefs,
+                        // otherwise the example issue-47680 will panic trying to access the
+                        // type and origins of `*temp` when mutably borrowing from it:
+                        // `t0 = &'L_*temp mut *temp;`
+                        //
+                        // if matches!(kind, AccessKind::BorrowMut(_)) {
+                        //     // A mutable borrow is considered a write to the place:
+                        //     //
+                        //     // 1) it accesses the origins in the type
+                        //     let (_, origins) = self.ty_and_origins_of_place(place);
+                        //     for origin in origins {
+                        //         facts
+                        //             .access_origin
+                        //             .push((origin.clone(), node_at(&bb.name, idx)));
+                        //     }
+                        //
+                        //     // 2) and invalidates existing loans of that place
+                        //     // facts
+                        //     //     .invalidate_origin
+                        //     //     .push((origin.into(), node_at(&bb.name, idx)));
+                        //     //
+                        //     // TODO: handle assignments to fields and loans taken on subsets of
+                        //     // their paths. Until then: only support invalidations on assignments
+                        //     // to complete places.
+                        //     //
+                        //     if let Some(loans) = self.loans.get(place) {
+                        //         for (origin, _) in loans {
+                        //             facts
+                        //                 .invalidate_origin
+                        //                 .push((origin.clone(), node_at(&bb.name, idx)));
+                        //         }
+                        //     }
+                        // }
                     }
 
                     AccessKind::Copy | AccessKind::Move => {
