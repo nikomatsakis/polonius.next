@@ -2,7 +2,8 @@ use super::*;
 use insta::assert_debug_snapshot;
 
 #[test]
-fn assignments_read_ref_arguments() {
+fn assignments_read_rhs() {
+    // ref
     let facts = expect_facts(
         "
         let a: &'a i32;
@@ -22,6 +23,27 @@ fn assignments_read_ref_arguments() {
     ]
     "###);
 
+    // type with origins
+    let facts = expect_facts(
+        "
+        let u: Vec<&'u i32>;
+        let v: Vec<&'v i32>;
+
+        bb0: {
+            u = move v;
+        }
+    ",
+    );
+    assert_debug_snapshot!(facts.access_origin, @r###"
+    [
+        (
+            "'v",
+            "bb0[0]",
+        ),
+    ]
+    "###);
+
+    // ref of type with origins
     let facts = expect_facts(
         "
         let u: &'u Vec<&'data_u i32>;
@@ -47,7 +69,8 @@ fn assignments_read_ref_arguments() {
 }
 
 #[test]
-fn function_calls_read_ref_arguments() {
+fn function_calls_read_arguments() {
+    // ref
     let facts = expect_facts(
         "
         let ref: &'ref i32;
@@ -66,6 +89,26 @@ fn function_calls_read_ref_arguments() {
     ]
     "###);
 
+    // type with origins
+    let facts = expect_facts(
+        "
+        let v: Vec<&'v i32>;
+
+        bb0: {
+            Vec_len(move v);
+        }
+    ",
+    );
+    assert_debug_snapshot!(facts.access_origin, @r###"
+    [
+        (
+            "'v",
+            "bb0[0]",
+        ),
+    ]
+    "###);
+
+    // ref of type with origins
     let facts = expect_facts(
         "
         let v: &'v Vec<&'data i32>;

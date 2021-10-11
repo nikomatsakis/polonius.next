@@ -59,6 +59,7 @@ fn vec_temp() {
     }
 
     bb0[6]: {
+    	access_origin('v)
     }
     "###);
 }

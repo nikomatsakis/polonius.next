@@ -266,14 +266,12 @@ impl FactEmitter {
                         // instead of just being "reads" (e.g. maybe moves also need clearing
                         // or invalidations)
 
-                        // Reading a reference accesses all the origins in its type
-                        let (ty, origins) = self.ty_and_origins_of_place(place);
-                        if ty.is_ref() {
-                            for origin in origins {
-                                facts
-                                    .access_origin
-                                    .push((origin.into(), node_at(&bb.name, idx)));
-                            }
+                        // Reads access all the origins in their type
+                        let (_, origins) = self.ty_and_origins_of_place(place);
+                        for origin in origins {
+                            facts
+                                .access_origin
+                                .push((origin.into(), node_at(&bb.name, idx)));
                         }
                     }
                 }
