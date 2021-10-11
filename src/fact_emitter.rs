@@ -349,12 +349,18 @@ impl FactEmitter {
     fn ty_and_origins_of_place(&self, place: &Place) -> (Ty, Vec<Origin>) {
         let mut origins = Vec::new();
 
-        // The `base` is always a variable of the program
+        // The `base` is always a variable of the program, but can be deref'd.
+        let base = if let Some(deref_base) = place.deref_base() {
+            deref_base
+        } else {
+            &place.base
+        };
+
         let v = self
             .program
             .variables
             .iter()
-            .find(|v| v.name == place.base)
+            .find(|v| v.name == base)
             .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
 
         let ty = if place.fields.is_empty() {
@@ -454,6 +460,17 @@ impl Ty {
 
             Ty::I32 => {}
             Ty::Unit => {}
+        }
+    }
+}
+
+impl Place {
+    // If the place `base` is deref'd, returns its name without the deref `*`
+    fn deref_base(&self) -> Option<&str> {
+        if self.base.starts_with('*') {
+            Some(&self.base[1..])
+        } else {
+            None
         }
     }
 }
