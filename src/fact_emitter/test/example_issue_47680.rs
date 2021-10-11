@@ -5,12 +5,13 @@ use insta::assert_display_snapshot;
 // Port of /polonius.next/tests/issue-47680/program.txt
 fn issue_47680() {
     let program = "
+        let thing: Thing;
         let temp: &'temp mut Thing;
         let t0: &'t0 mut Thing;
         let v: &'v mut Thing;
 
         bb0: {
-            temp = &'L_Thing mut Thing;
+            temp = &'L_Thing mut thing;
             goto bb1;
         }
 
