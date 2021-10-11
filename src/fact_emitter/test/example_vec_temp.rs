@@ -43,6 +43,7 @@ fn vec_temp() {
     	clear_origin('L_v)
     	clear_origin('tmp0)
     	clear_origin('tmp1)
+    	invalidate_origin('L_v)
     	introduce_subset('L_v, 'tmp0)
     	goto bb0[4]
     }

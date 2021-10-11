@@ -38,6 +38,7 @@ fn issue_47680() {
     bb0[0]: {
     	clear_origin('L_Thing)
     	clear_origin('temp)
+    	invalidate_origin('L_Thing)
     	introduce_subset('L_Thing, 'temp)
     	goto bb1[0]
     }
@@ -45,6 +46,7 @@ fn issue_47680() {
     bb1[0]: {
     	clear_origin('L_*temp)
     	clear_origin('t0)
+    	invalidate_origin('L_*temp)
     	introduce_subset('L_*temp, 't0)
     	goto bb1[1]
     }
