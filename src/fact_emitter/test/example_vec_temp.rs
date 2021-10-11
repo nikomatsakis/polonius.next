@@ -48,6 +48,7 @@ fn vec_temp() {
 
     bb0[4]: {
     	access_origin('tmp0)
+    	access_origin('tmp1)
     	access_origin('p)
     	goto bb0[5]
     }
