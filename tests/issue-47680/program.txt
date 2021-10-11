@@ -27,6 +27,7 @@ mark_as_loan_origin('L_*temp)
 a: "temp = &'L_Thing mut Thing" {
     // FIXME: `temp` is overwritten, `'temp` should be cleared here
     // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be cleared here
+    // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be invalidated here
     introduce_subset('L_Thing, 'temp)
     goto b
 }
