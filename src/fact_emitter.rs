@@ -133,33 +133,29 @@ impl FactEmitter {
                     self.emit_expr_facts(bb, idx, expr, facts);
 
                     // Emit facts about the assignment LHS
-                    let (lhs_ty, _) = self.ty_and_origins_of_place(place);
-                    match &lhs_ty {
-                        Ty::Ref { origin, .. } | Ty::RefMut { origin, .. } => {
-                            // Assignments to references clear all origins in their type
-                            //
-                            // TODO: actually clear all origins in `ty` and not just the root
+                    let (lhs_ty, lhs_origins) = self.ty_and_origins_of_place(place);
+                    if lhs_ty.is_ref() {
+                        // Assignments to references clear all origins in their type
+                        for origin in &lhs_origins {
                             facts
                                 .clear_origin
-                                .push((origin.into(), node_at(&bb.name, idx)));
+                                .push((origin.clone(), node_at(&bb.name, idx)));
                         }
-
-                        _ => {
-                            // Assignments to non-references invalidate loans borrowing from them.
-                            //
-                            // TODO: handle assignments to fields and loans taken on subsets of
-                            // their paths. Until then: only support invalidations on assignments
-                            // to complete places.
-                            //
-                            if let Some(loans) = self.loans.get(place) {
-                                for (origin, _location) in loans {
-                                    // TODO: if the `location` where the loan was issued can't
-                                    // reach the current location, there is no need to emit
-                                    // the invalidation
-                                    facts
-                                        .invalidate_origin
-                                        .push((origin.clone(), node_at(&bb.name, idx)));
-                                }
+                    } else {
+                        // Assignments to non-references invalidate loans borrowing from them.
+                        //
+                        // TODO: handle assignments to fields and loans taken on subsets of
+                        // their paths. Until then: only support invalidations on assignments
+                        // to complete places.
+                        //
+                        if let Some(loans) = self.loans.get(place) {
+                            for (origin, _location) in loans {
+                                // TODO: if the `location` where the loan was issued can't
+                                // reach the current location, there is no need to emit
+                                // the invalidation
+                                facts
+                                    .invalidate_origin
+                                    .push((origin.clone(), node_at(&bb.name, idx)));
                             }
                         }
                     }
@@ -406,6 +402,10 @@ impl FactEmitter {
 }
 
 impl Ty {
+    fn is_ref(&self) -> bool {
+        matches!(self, Ty::Ref { .. } | Ty::RefMut { .. })
+    }
+
     // Collects all the origins present in this type, recursively.
     fn collect_origins_into(&self, origins: &mut Vec<Origin>) {
         match self {

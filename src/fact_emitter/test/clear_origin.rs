@@ -22,6 +22,36 @@ fn assignments_to_references() {
     );
 }
 
+#[test]
+fn all_origins_in_type_are_cleared_on_assignments_to_references() {
+    let facts = expect_facts(
+        "
+        let v: Vec<&'v i32>;
+        let ref: &'ref Vec<&'vec i32>;
+
+        bb0: {
+            ref = &'L_v v;
+        }
+    ",
+    );
+    assert_debug_snapshot!(facts.clear_origin, @r###"
+    [
+        (
+            "'L_v",
+            "bb0[0]",
+        ),
+        (
+            "'ref",
+            "bb0[0]",
+        ),
+        (
+            "'vec",
+            "bb0[0]",
+        ),
+    ]
+    "###);
+}
+
 // #[test]
 // fn all_origins_in_type_are_cleared_on_assignments() {
 //     // TODO
