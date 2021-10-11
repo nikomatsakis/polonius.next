@@ -10,20 +10,20 @@ mod example_issue_47680;
 mod example_vec_temp;
 
 use super::*;
+use crate::ast_parser::test::expect_parse;
 use insta::{assert_debug_snapshot, assert_display_snapshot};
 
 fn expect_facts(program: &str) -> Facts {
-    match emit_facts(program) {
-        Ok(facts) => facts,
-        Err(e) => {
-            panic!("Couldn't emit facts because of error: {}", e);
-        }
-    }
+    let program = expect_parse(program);
+    let emitter = FactEmitter::new(program);
+    let mut facts = Default::default();
+    emitter.emit_facts(&mut facts);
+    facts
 }
 
 // Returns the type and collected origins, of the given place's path in the given program.
 fn ty_and_origins_of_place(program: &str, path: &str) -> (Ty, Vec<Origin>) {
-    let program = parse_ast(program).expect("Unexpected parsing error");
+    let program = expect_parse(program);
     let emitter = FactEmitter::new(program);
 
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();

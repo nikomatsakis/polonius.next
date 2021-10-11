@@ -15,7 +15,7 @@ use crate::ast;
 use crate::span::{Span, Spanned as Sp, WithSpan};
 
 #[cfg(test)]
-mod test;
+pub(crate) mod test;
 
 peg::parser! {
     grammar ast_parser() for str {

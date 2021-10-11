@@ -1,6 +1,6 @@
 use super::*;
 
-fn expect_parse(s: &str) -> ast::Program {
+pub fn expect_parse(s: &str) -> ast::Program {
     match super::ast_parser::program(s) {
         Ok(p) => p,
         Err(e) => {
