@@ -37,15 +37,15 @@ fn all_origins_in_type_are_cleared_on_assignments_to_references() {
     assert_debug_snapshot!(facts.clear_origin, @r###"
     [
         (
-            "'L_v",
-            "bb0[0]",
-        ),
-        (
             "'ref",
             "bb0[0]",
         ),
         (
             "'vec",
+            "bb0[0]",
+        ),
+        (
+            "'L_v",
             "bb0[0]",
         ),
     ]

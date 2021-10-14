@@ -33,17 +33,17 @@ fn vec_temp() {
     }
 
     bb0[2]: {
-    	clear_origin('L_x)
     	clear_origin('p)
+    	clear_origin('L_x)
     	introduce_subset('L_x, 'p)
     	goto bb0[3]
     }
 
     bb0[3]: {
     	access_origin('v)
-    	clear_origin('L_v)
     	clear_origin('tmp0)
     	clear_origin('tmp1)
+    	clear_origin('L_v)
     	invalidate_origin('L_v)
     	introduce_subset('L_v, 'tmp0)
     	goto bb0[4]

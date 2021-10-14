@@ -129,9 +129,6 @@ impl FactEmitter {
 
             match &**s {
                 Statement::Assign(place, expr) => {
-                    // Emit facts about the assignment RHS: evaluate the `expr`
-                    self.emit_expr_facts(bb, idx, expr, facts);
-
                     // Emit facts about the assignment LHS
                     let (lhs_ty, lhs_origins) = self.ty_and_origins_of_place(place);
 
@@ -160,6 +157,9 @@ impl FactEmitter {
                             }
                         }
                     }
+
+                    // Emit facts about the assignment RHS: evaluate the `expr`
+                    self.emit_expr_facts(bb, idx, expr, facts);
 
                     // Introduce subsets: `expr` flows into `place`
                     //

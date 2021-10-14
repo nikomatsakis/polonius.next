@@ -191,8 +191,8 @@ fn example_a() {
     }
 
     bb0[1]: {
-    	clear_origin('L_x)
     	clear_origin('y)
+    	clear_origin('L_x)
     	introduce_subset('L_x, 'y)
     	goto bb0[2]
     }
