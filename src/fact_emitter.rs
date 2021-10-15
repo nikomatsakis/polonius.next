@@ -161,83 +161,8 @@ impl FactEmitter {
                     // Emit facts about the assignment RHS: evaluate the `expr`
                     self.emit_expr_facts(bb, idx, expr, facts);
 
-                    // Introduce subsets: `expr` flows into `place`
-                    //
-                    // TODO: do we need some type checking to ensure this assigment is valid
-                    // with respect to the LHS/RHS types, mutability, etc ?
-                    //
-                    // TODO: handles simple subsets only for now, complete this.
-                    //
-                    // TODO: if the `expr` is a call, we probably also need subsets between
-                    // the arguments, the return value and the LHS ?
-                    //
-                    // We're in an assignment and we assume the LHS and RHS have the same shape,
-                    // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
-                    //
-                    match lhs_ty {
-                        Ty::Ref {
-                            origin: target_origin,
-                            ..
-                        }
-                        | Ty::RefMut {
-                            origin: target_origin,
-                            ..
-                        } => {
-                            let mut emit_subset_fact = |source_origin, target_origin| {
-                                facts.introduce_subset.push((
-                                    source_origin,
-                                    target_origin,
-                                    node_at(&bb.name, idx),
-                                ));
-                            };
-
-                            match expr {
-                                Expr::Access {
-                                    kind:
-                                        AccessKind::Borrow(source_origin)
-                                        | AccessKind::BorrowMut(source_origin),
-                                    ..
-                                } => {
-                                    emit_subset_fact(source_origin.into(), target_origin.into());
-                                }
-
-                                Expr::Access {
-                                    kind: AccessKind::Copy | AccessKind::Move,
-                                    place,
-                                } => {
-                                    let (rhs_ty, _) = self.ty_and_origins_of_place(place);
-                                    match rhs_ty {
-                                        Ty::Ref {
-                                            origin: source_origin,
-                                            ..
-                                        }
-                                        | Ty::RefMut {
-                                            origin: source_origin,
-                                            ..
-                                        } => {
-                                            emit_subset_fact(
-                                                source_origin.into(),
-                                                target_origin.into(),
-                                            );
-                                        }
-
-                                        _ => {
-                                            // The RHS has no refs, there are no subsets to emit
-                                        }
-                                    }
-                                }
-
-                                _ => {
-                                    // The expr is not borrowing anything, there are no
-                                    // subsets to emit
-                                }
-                            }
-                        }
-
-                        _ => {
-                            // The LHS contains no origins, there are no subsets to emit
-                        }
-                    }
+                    // Relate the LHS and RHS tys
+                    self.emit_subset_facts(bb, idx, &lhs_ty, expr, facts);
                 }
 
                 Statement::Expr(expr) => {
@@ -318,6 +243,89 @@ impl FactEmitter {
             }
 
             _ => {}
+        }
+    }
+
+    // Introduce subsets: `expr` flows into `place`
+    //
+    // TODO: do we need some type checking to ensure this assigment is valid
+    // with respect to the LHS/RHS types, mutability, etc ?
+    //
+    // TODO: handles simple subsets only for now, complete this.
+    //
+    // TODO: if the `expr` is a call, we probably also need subsets between
+    // the arguments, the return value and the LHS ?
+    //
+    // We're in an assignment and we assume the LHS and RHS have the same shape,
+    // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
+    //
+    fn emit_subset_facts(
+        &self,
+        bb: &BasicBlock,
+        idx: usize,
+        lhs_ty: &Ty,
+        rhs_expr: &Expr,
+        facts: &mut Facts,
+    ) {
+        match lhs_ty {
+            Ty::Ref {
+                origin: target_origin,
+                ..
+            }
+            | Ty::RefMut {
+                origin: target_origin,
+                ..
+            } => {
+                let mut emit_subset_fact = |source_origin, target_origin| {
+                    facts.introduce_subset.push((
+                        source_origin,
+                        target_origin,
+                        node_at(&bb.name, idx),
+                    ));
+                };
+
+                match rhs_expr {
+                    Expr::Access {
+                        kind:
+                            AccessKind::Borrow(source_origin) | AccessKind::BorrowMut(source_origin),
+                        ..
+                    } => {
+                        emit_subset_fact(source_origin.into(), target_origin.into());
+                    }
+
+                    Expr::Access {
+                        kind: AccessKind::Copy | AccessKind::Move,
+                        place,
+                    } => {
+                        let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                        match rhs_ty {
+                            Ty::Ref {
+                                origin: source_origin,
+                                ..
+                            }
+                            | Ty::RefMut {
+                                origin: source_origin,
+                                ..
+                            } => {
+                                emit_subset_fact(source_origin.into(), target_origin.into());
+                            }
+
+                            _ => {
+                                // The RHS has no refs, there are no subsets to emit
+                            }
+                        }
+                    }
+
+                    _ => {
+                        // The expr is not borrowing anything, there are no
+                        // subsets to emit
+                    }
+                }
+            }
+
+            _ => {
+                // The LHS contains no origins, there are no subsets to emit
+            }
         }
     }
 
