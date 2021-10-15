@@ -136,7 +136,7 @@ impl FactEmitter {
                     for origin in &lhs_origins {
                         facts
                             .clear_origin
-                            .push((origin.clone(), node_at(&bb.name, idx)));
+                            .push((origin.clone(), self.node_at(&bb.name, idx)));
                     }
 
                     if !lhs_ty.is_ref() {
@@ -153,7 +153,7 @@ impl FactEmitter {
                                 // the invalidation
                                 facts
                                     .invalidate_origin
-                                    .push((origin.clone(), node_at(&bb.name, idx)));
+                                    .push((origin.clone(), self.node_at(&bb.name, idx)));
                             }
                         }
                     }
@@ -183,7 +183,7 @@ impl FactEmitter {
                     AccessKind::Borrow(origin) | AccessKind::BorrowMut(origin) => {
                         facts
                             .clear_origin
-                            .push((origin.into(), node_at(&bb.name, idx)));
+                            .push((origin.into(), self.node_at(&bb.name, idx)));
 
                         if matches!(kind, AccessKind::BorrowMut(_)) {
                             // A mutable borrow is considered a write to the place:
@@ -193,7 +193,7 @@ impl FactEmitter {
                             for origin in origins {
                                 facts
                                     .access_origin
-                                    .push((origin.clone(), node_at(&bb.name, idx)));
+                                    .push((origin.clone(), self.node_at(&bb.name, idx)));
                             }
 
                             // 2) and invalidates existing loans of that place
@@ -209,7 +209,7 @@ impl FactEmitter {
                                 for (origin, _) in loans {
                                     facts
                                         .invalidate_origin
-                                        .push((origin.clone(), node_at(&bb.name, idx)));
+                                        .push((origin.clone(), self.node_at(&bb.name, idx)));
                                 }
                             }
                         }
@@ -226,7 +226,7 @@ impl FactEmitter {
                         for origin in origins {
                             facts
                                 .access_origin
-                                .push((origin.into(), node_at(&bb.name, idx)));
+                                .push((origin.into(), self.node_at(&bb.name, idx)));
                         }
                     }
                 }
@@ -280,7 +280,7 @@ impl FactEmitter {
                     facts.introduce_subset.push((
                         source_origin,
                         target_origin,
-                        node_at(&bb.name, idx),
+                        self.node_at(&bb.name, idx),
                     ));
                 };
 
@@ -336,7 +336,7 @@ impl FactEmitter {
         for idx in 1..statement_count {
             facts
                 .cfg_edge
-                .push((node_at(&bb.name, idx - 1), node_at(&bb.name, idx)));
+                .push((self.node_at(&bb.name, idx - 1), self.node_at(&bb.name, idx)));
         }
 
         // Emit inter-block CFG edges between a block and its successors
@@ -344,8 +344,8 @@ impl FactEmitter {
             // Note: `goto`s are not statements, so a block with a single goto
             // has no statements but still needs a node index in the CFG.
             facts.cfg_edge.push((
-                node_at(&bb.name, statement_count.saturating_sub(1)),
-                node_at(succ, 0),
+                self.node_at(&bb.name, statement_count.saturating_sub(1)),
+                self.node_at(succ, 0),
             ));
         }
     }
@@ -438,6 +438,33 @@ impl FactEmitter {
 
         (ty, origins)
     }
+
+    fn node_at(&self, block: &str, statement_idx: usize) -> Node {
+        let mut node = format!("{}[{}]", block, statement_idx);
+
+        // Hack: if we temporarily need simpler node names, while comparing to the manual facts:
+        // use single-letter names.
+        if std::env::var("SIMPLE_NODES").is_ok() {
+            // Make the block-local statement idx refer to a concatenated list of all
+            // statements: adding the number of statements prior to this block.
+            let bb_statement_start_idx = self
+                .program
+                .basic_blocks
+                .iter()
+                .take_while(|bb| block != bb.name)
+                .fold(0, |acc, bb| acc + bb.statements.len());
+            let node_idx = 'a' as u32 + (bb_statement_start_idx + statement_idx) as u32;
+            let node_as_letter = char::from_u32(node_idx).unwrap_or_else(|| {
+                panic!(
+                    "Couldn't turn '{}' into a single letter name for node {:?}",
+                    node_idx, node
+                )
+            });
+            node = node_as_letter.to_string().into()
+        }
+
+        node.into()
+    }
 }
 
 impl Ty {
@@ -477,10 +504,6 @@ impl Place {
             None
         }
     }
-}
-
-fn node_at(block: &str, idx: usize) -> Node {
-    format!("{}[{}]", block, idx).into()
 }
 
 // For readability purposes, and conversion to Soufflé facts, display the facts as the
