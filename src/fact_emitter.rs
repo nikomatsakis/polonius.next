@@ -527,6 +527,7 @@ impl fmt::Display for Facts {
             facts_per_node.entry(&node2.0).or_default();
         }
 
+        // Display the facts in the operational order described in the datalog rules.
         for (origin, node) in &self.access_origin {
             facts_per_node
                 .entry(&node.0)
@@ -534,18 +535,18 @@ impl fmt::Display for Facts {
                 .push(format!("access_origin({})", origin.0));
         }
 
-        for (origin, node) in &self.clear_origin {
-            facts_per_node
-                .entry(&node.0)
-                .or_default()
-                .push(format!("clear_origin({})", origin.0));
-        }
-
         for (origin, node) in &self.invalidate_origin {
             facts_per_node
                 .entry(&node.0)
                 .or_default()
                 .push(format!("invalidate_origin({})", origin.0));
+        }
+
+        for (origin, node) in &self.clear_origin {
+            facts_per_node
+                .entry(&node.0)
+                .or_default()
+                .push(format!("clear_origin({})", origin.0));
         }
 
         for (origin1, origin2, node) in &self.introduce_subset {
