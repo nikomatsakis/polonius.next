@@ -30,12 +30,13 @@ fn ty_and_origins_of_place(program: &str, path: &str) -> (Ty, Vec<Origin>) {
     let base = path.remove(0);
     let place = Place { base, fields: path };
 
-    emitter.ty_and_origins_of_place(&place)
+    let (ty, origins) = emitter.ty_and_origins_of_place(&place);
+    (ty.clone(), origins)
 }
 
 // Returns the type of the given place's path in the given program.
 fn find_ty(program: &str, path: &str) -> Ty {
-    ty_and_origins_of_place(program, path).0
+    ty_and_origins_of_place(program, path).0.clone()
 }
 
 // Returns the origins present in the type of the given place's path in the given program.

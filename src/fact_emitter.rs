@@ -350,7 +350,7 @@ impl FactEmitter {
         }
     }
 
-    fn ty_and_origins_of_place(&self, place: &Place) -> (Ty, Vec<Origin>) {
+    fn ty_and_origins_of_place(&self, place: &Place) -> (&Ty, Vec<Origin>) {
         let mut origins = Vec::new();
 
         // The `base` is always a variable of the program, but can be deref'd.
@@ -436,7 +436,7 @@ impl FactEmitter {
         // fields in the list having already been collected just above.
         ty.collect_origins_into(&mut origins);
 
-        (ty.clone(), origins)
+        (ty, origins)
     }
 }
 
