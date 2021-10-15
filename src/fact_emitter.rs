@@ -168,8 +168,6 @@ impl FactEmitter {
                 Statement::Expr(expr) => {
                     // Evaluate the `expr`
                     self.emit_expr_facts(bb, idx, expr, facts);
-
-                    // TODO: is there something more to do because we're in a "drop" ?
                 }
             }
         }
