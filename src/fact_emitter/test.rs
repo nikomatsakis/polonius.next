@@ -13,18 +13,18 @@ use super::*;
 use crate::ast_parser::test::expect_parse;
 use insta::{assert_debug_snapshot, assert_display_snapshot};
 
-fn expect_facts(program: &str) -> Facts {
-    let program = expect_parse(program);
-    let emitter = FactEmitter::new(program);
+fn expect_facts(input: &str) -> Facts {
+    let program = expect_parse(input);
+    let emitter = FactEmitter::new(program, input);
     let mut facts = Default::default();
     emitter.emit_facts(&mut facts);
     facts
 }
 
 // Returns the type and collected origins, of the given place's path in the given program.
-fn ty_and_origins_of_place(program: &str, path: &str) -> (Ty, Vec<Origin>) {
-    let program = expect_parse(program);
-    let emitter = FactEmitter::new(program);
+fn ty_and_origins_of_place(input: &str, path: &str) -> (Ty, Vec<Origin>) {
+    let program = expect_parse(input);
+    let emitter = FactEmitter::new(program, input);
 
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
     let base = path.remove(0);
@@ -186,24 +186,24 @@ fn example_a() {
     ";
 
     assert_display_snapshot!(expect_facts(program), @r###"
-    bb0[0]: {
+    bb0[0]: "x = 3" {
     	invalidate_origin('L_x)
     	goto bb0[1]
     }
 
-    bb0[1]: {
+    bb0[1]: "y = &'L_x x" {
     	clear_origin('y)
     	clear_origin('L_x)
     	introduce_subset('L_x, 'y)
     	goto bb0[2]
     }
 
-    bb0[2]: {
+    bb0[2]: "x = 4" {
     	invalidate_origin('L_x)
     	goto bb0[3]
     }
 
-    bb0[3]: {
+    bb0[3]: "use(move y)" {
     	access_origin('y)
     }
     "###);

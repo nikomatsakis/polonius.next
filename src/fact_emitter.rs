@@ -49,12 +49,13 @@ struct Facts {
     clear_origin: Vec<(Origin, Node)>,
     introduce_subset: Vec<(Origin, Origin, Node)>,
     invalidate_origin: Vec<(Origin, Node)>,
+    node_text: Vec<(String, Node)>,
 }
 
 #[allow(dead_code)]
-fn emit_facts(program: &str) -> eyre::Result<Facts> {
-    let program = parse_ast(program)?;
-    let emitter = FactEmitter::new(program);
+fn emit_facts(input: &str) -> eyre::Result<Facts> {
+    let program = parse_ast(input)?;
+    let emitter = FactEmitter::new(program, input);
     let mut facts = Default::default();
     emitter.emit_facts(&mut facts);
     Ok(facts)
@@ -78,13 +79,14 @@ impl From<(usize, usize)> for Location {
     }
 }
 
-struct FactEmitter {
+struct FactEmitter<'a> {
+    input: &'a str,
     program: Program,
     loans: HashMap<Place, Vec<(Origin, Location)>>,
 }
 
-impl FactEmitter {
-    fn new(program: Program) -> Self {
+impl<'a> FactEmitter<'a> {
+    fn new(program: Program, input: &'a str) -> Self {
         // Collect loans from borrow expressions present in the program
         let mut loans: HashMap<Place, Vec<(Origin, Location)>> = HashMap::new();
 
@@ -110,7 +112,7 @@ impl FactEmitter {
             }
         }
 
-        Self { program, loans }
+        Self { input, program, loans }
     }
 
     fn emit_facts(&self, facts: &mut Facts) {
@@ -124,8 +126,15 @@ impl FactEmitter {
         self.emit_cfg_edges(&bb, facts);
 
         for (idx, s) in bb.statements.iter().enumerate() {
-            // TODO: emit `node_text` per statement, but that string could be
-            // collected at the parser level
+            // Emit `node_text` for this statement: the line from where it was parsed
+            // in the original input program.
+            let statement_text = {
+                let span = s.span();
+                self.input[span.start()..span.end() - 1].to_string()
+            };
+            facts
+                .node_text
+                .push((statement_text, self.node_at(&bb.name, idx)));
 
             match &**s {
                 Statement::Assign(place, expr) => {
@@ -560,8 +569,18 @@ impl fmt::Display for Facts {
                 write!(f, "\n")?;
             }
 
-            // TODO: also print `node_text` here, once we have it
-            writeln!(f, "{}: {{", node)?;
+            // Emit node start, with the statement's `node_text` representation
+            let node_text = self
+                .node_text
+                .iter()
+                .find_map(|(node_text, candidate_node)| {
+                    if candidate_node.0 == node {
+                        Some(node_text.as_ref())
+                    } else {
+                        None
+                    }
+                }).unwrap_or("(pass)");
+            writeln!(f, "{}: {:?} {{", node, node_text)?;
 
             // Emit all facts first
             for fact in facts {
