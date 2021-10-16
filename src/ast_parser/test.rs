@@ -421,3 +421,17 @@ fn fn_test() {
     }
     "###);
 }
+
+#[test]
+fn proj_test() {
+    let p = expect_parse(
+        "
+        let x: ();
+        bb0: {
+            move *(*x.f).f2.f3;
+        }
+    ",
+    );
+
+    insta::assert_debug_snapshot!(p);
+}
