@@ -3,8 +3,8 @@
 // let p = 22;
 // let mut x: &mut i32 = &mut p; // `x` points at `p`
 // let y = &mut *x; // `y` points at `p` too
-// *y = 11; 
-// use(x); // ERROR: both `x` and `y` are used
+// use(x); 
+// *y = 11; // ERROR: both `x` and `y` are used
 
 // Decls
 // let p: u32
@@ -44,25 +44,26 @@ c: "y = &'L_*x mut *x" {
     clear_origin('L_*x)
 
     // Unroll `*x`
-    introduce_subset('L_*x, 'x)
+    introduce_subset('x, 'L_*x)
 
     // `&'L_*x mut u32 <: &'y mut u32`
     introduce_subset('L_*x, 'y) 
     goto d
 }
 
-d: "*y = 11" {
-    // Access `*y` [== `p`] where `y: &'y mut u32`
-    access_origin('y)
+d: "use(x)" {
+    // Access `x` [== `&mut p`] where `x: &'x mut u32`
+    access_origin('x)
 
-    // Invalidate borrows of the target of `y`, which is `*x`
+    // Invalidate borrows that contain the used path `x`
     invalidate_origin('L_*x)
 
     goto e
 }
 
-e: "use(x)" {
-    // Access `x` [== `&mut p`] where `x: &'x mut u32`
-    access_origin('x)
+e: "*y = 11" {
+    // Access `*y` [== `p`] where `y: &'y mut u32`
+    access_origin('y)
+
     goto
 }

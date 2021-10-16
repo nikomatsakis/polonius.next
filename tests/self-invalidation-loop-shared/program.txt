@@ -1,0 +1,80 @@
+// Corresponds to `self-invalidation-loop`, but shared instead of mutable re-borrows.
+
+// let mut x = 42;
+// let mut v: Vec<&u32> = vec![];
+// while maybe() {
+//     let p = &x; // L_x 
+//     let v_tmp = &mut v; // L_v
+//     Vec::push(v_tmp, p); 
+// }
+
+// Decls
+// let x: u32
+// let v: Vec<&'v u32>
+// let p: &'p u32
+// let v_tmp: &'tmp0 Vec<&'tmp1 u32>
+// 
+// Loan origins:
+// 'L_x: `p`'s borrow of `x` 
+// 'L_v: temporary borrow of `v` for `Vec::push`
+
+a: "x = 22" {
+    invalidate_origin('L_x)
+    goto b
+}
+
+b: "v = vec![]" {
+    invalidate_origin('L_v)
+    goto c
+}
+
+c: "p = &'L_x x" {
+    // Access `x` where `x: u32`
+
+    // Clear all origins in `p` (overwritten plan):
+    clear_origin('p)
+
+    // Clear 'L_x because it's being recreated
+    clear_origin('L_x)
+
+    // `&'L_x u32 <: &'p u32`
+    introduce_subset('L_x, 'p) 
+    
+    goto d
+}
+
+d: "v_tmp = &'L_v mut v" {
+    // Access `v` where `v: Vec<&'v u32>`
+    access_origin('v)
+    
+    // Invalidate borrows of `v`
+    invalidate_origin('L_v)
+
+    // Clear all origins in `v_tmp` (overwritten plan):
+    clear_origin('tmp0)
+    clear_origin('tmp1)
+
+    // Clear 'L_v because it's being recreated
+    clear_origin('L_v)
+
+    // &'L_v mut Vec<&'v u32> <: &'tmp0 Vec<&'tmp1 u32>
+    introduce_subset('L_v, 'tmp0)
+    introduce_subset('tmp1, 'v)
+    introduce_subset('v, 'tmp1)
+
+    goto e 
+}
+
+e: "Vec::push(v_tmp, p)" {
+    // Access `v_tmp` [== `&'tmp1 mut v`] where `v_tmp: &'tmp0 mut Vec<&'tmp1 u32>`
+    access_origin('tmp0)
+    access_origin('tmp1)
+    
+    // Access `p` [== `&x`] where `p: &'p u32`
+    access_origin('p)
+
+    // Signature requires `&'p u32` <: `&'tmp1 u32`:
+    introduce_subset('p, 'tmp1)
+
+    goto c
+}
