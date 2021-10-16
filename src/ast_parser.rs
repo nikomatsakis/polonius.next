@@ -122,7 +122,7 @@ peg::parser! {
 
         rule statement() -> ast::Statement = (
             place:place() _ "=" _ expr:expr() _ ";" { ast::Statement::Assign(place, expr) } /
-            expr:expr() _ ";" { ast::Statement::Drop(expr) }
+            expr:expr() _ ";" { ast::Statement::Expr(expr) }
         )
 
         rule expr() -> ast::Expr = (
