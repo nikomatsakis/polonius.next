@@ -63,6 +63,7 @@ fn vec_temp() {
 
     bb0[6]: "Vec_len(copy v)" {
     	access_origin('v)
+    	goto
     }
     "###);
 }

@@ -205,6 +205,7 @@ fn example_a() {
 
     bb0[3]: "use(move y)" {
     	access_origin('y)
+    	goto
     }
     "###);
 }

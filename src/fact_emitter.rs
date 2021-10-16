@@ -587,28 +587,14 @@ impl fmt::Display for Facts {
                 writeln!(f, "\t{}", fact)?;
             }
 
-            // And `goto` facts last, with their special syntax.
-            // TODO: is a `goto` required when there is no successor ?
-            let mut has_successors = false;
-            for (succ_idx, (_, succ)) in self
-                .cfg_edge
-                .iter()
-                .filter(|(from, _)| from.0 == node)
-                .enumerate()
-            {
-                if succ_idx == 0 {
-                    has_successors = true;
-                    write!(f, "\tgoto")?;
-                }
-
+            // And `goto` facts last, with their special syntax. A `goto` is always required,
+            // even for the function's exit node (but will have no successors in that case).
+            write!(f, "\tgoto")?;
+            for (_, succ) in self.cfg_edge.iter().filter(|(from, _)| from.0 == node) {
                 write!(f, " {}", succ.0)?;
             }
 
-            if has_successors {
-                write!(f, "\n")?;
-            }
-
-            writeln!(f, "}}")?;
+            writeln!(f, "\n}}")?;
         }
 
         Ok(())
