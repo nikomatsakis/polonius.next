@@ -96,9 +96,19 @@ pub enum Parameter {
 }
 
 #[derive(Clone, Debug)]
+pub enum Projection {
+    Field(Name),
+    Deref,
+}
+
+#[derive(Clone, Debug)]
 pub struct Place {
     pub base: Name,
-    pub fields: Vec<Name>,
+
+    /// Any projections on `base`, starting from the innermost one.
+    ///
+    /// For example, `x.f1.f2` would give `vec!["f1", "f2"]`.
+    pub projections: Vec<Projection>,
 }
 
 pub type Name = String;
