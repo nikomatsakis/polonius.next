@@ -57,15 +57,21 @@ fn statement_test() {
             BasicBlock {
                 name: "bb0",
                 statements: [
-                    Assign(
-                        Place {
-                            base: "x",
-                            fields: [],
+                    Spanned {
+                        span: Span {
+                            start: 28,
+                            end: 35,
                         },
-                        Number {
-                            value: 22,
-                        },
-                    ),
+                        inner: Assign(
+                            Place {
+                                base: "x",
+                                fields: [],
+                            },
+                            Number {
+                                value: 22,
+                            },
+                        ),
+                    },
                 ],
                 successors: [],
             },
@@ -99,45 +105,63 @@ fn borrow_test() {
             BasicBlock {
                 name: "bb0",
                 statements: [
-                    Assign(
-                        Place {
-                            base: "x",
-                            fields: [],
+                    Spanned {
+                        span: Span {
+                            start: 28,
+                            end: 35,
                         },
-                        Number {
-                            value: 22,
-                        },
-                    ),
-                    Assign(
-                        Place {
-                            base: "y",
-                            fields: [],
-                        },
-                        Access {
-                            kind: Borrow(
-                                "'y",
-                            ),
-                            place: Place {
+                        inner: Assign(
+                            Place {
                                 base: "x",
                                 fields: [],
                             },
+                            Number {
+                                value: 22,
+                            },
+                        ),
+                    },
+                    Spanned {
+                        span: Span {
+                            start: 48,
+                            end: 58,
                         },
-                    ),
-                    Assign(
-                        Place {
-                            base: "z",
-                            fields: [],
-                        },
-                        Access {
-                            kind: BorrowMut(
-                                "'z",
-                            ),
-                            place: Place {
-                                base: "x",
+                        inner: Assign(
+                            Place {
+                                base: "y",
                                 fields: [],
                             },
+                            Access {
+                                kind: Borrow(
+                                    "'y",
+                                ),
+                                place: Place {
+                                    base: "x",
+                                    fields: [],
+                                },
+                            },
+                        ),
+                    },
+                    Spanned {
+                        span: Span {
+                            start: 71,
+                            end: 85,
                         },
-                    ),
+                        inner: Assign(
+                            Place {
+                                base: "z",
+                                fields: [],
+                            },
+                            Access {
+                                kind: BorrowMut(
+                                    "'z",
+                                ),
+                                place: Place {
+                                    base: "x",
+                                    fields: [],
+                                },
+                            },
+                        ),
+                    },
                 ],
                 successors: [
                     "bb1",
@@ -196,41 +220,59 @@ fn copy_move_test() {
             BasicBlock {
                 name: "bb0",
                 statements: [
-                    Assign(
-                        Place {
-                            base: "x",
-                            fields: [],
+                    Spanned {
+                        span: Span {
+                            start: 88,
+                            end: 95,
                         },
-                        Number {
-                            value: 22,
-                        },
-                    ),
-                    Assign(
-                        Place {
-                            base: "y",
-                            fields: [],
-                        },
-                        Access {
-                            kind: Copy,
-                            place: Place {
+                        inner: Assign(
+                            Place {
                                 base: "x",
                                 fields: [],
                             },
+                            Number {
+                                value: 22,
+                            },
+                        ),
+                    },
+                    Spanned {
+                        span: Span {
+                            start: 108,
+                            end: 119,
                         },
-                    ),
-                    Assign(
-                        Place {
-                            base: "z",
-                            fields: [],
-                        },
-                        Access {
-                            kind: Move,
-                            place: Place {
-                                base: "x",
+                        inner: Assign(
+                            Place {
+                                base: "y",
                                 fields: [],
                             },
+                            Access {
+                                kind: Copy,
+                                place: Place {
+                                    base: "x",
+                                    fields: [],
+                                },
+                            },
+                        ),
+                    },
+                    Spanned {
+                        span: Span {
+                            start: 132,
+                            end: 143,
                         },
-                    ),
+                        inner: Assign(
+                            Place {
+                                base: "z",
+                                fields: [],
+                            },
+                            Access {
+                                kind: Move,
+                                place: Place {
+                                    base: "x",
+                                    fields: [],
+                                },
+                            },
+                        ),
+                    },
                 ],
                 successors: [],
             },
