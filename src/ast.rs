@@ -42,8 +42,11 @@ pub struct BasicBlock {
 
 #[derive(Clone, Debug)]
 pub enum Statement {
+    /// An assignment (`place = expr;`).
     Assign(Place, Expr),
-    Drop(Expr),
+
+    /// A bare expression (`expr;`).
+    Expr(Expr),
 }
 
 #[derive(Clone, Debug)]
