@@ -1,3 +1,4 @@
+mod span;
 mod ast;
 mod ast_parser;
 mod fact_parser;
