@@ -16,6 +16,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use crate::ast;
+use crate::span::{Span, Spanned as Sp, WithSpan};
 
 #[cfg(test)]
 mod test;
@@ -110,7 +111,7 @@ peg::parser! {
         rule comma() -> () = _ "," _ { }
 
         rule basic_block() -> ast::BasicBlock = (
-            name:ident() _ ":" _ "{" _ statements:statement()**__ _ successors:goto() _ "}" {
+            name:ident() _ ":" _ "{" _ statements:sp(<statement()>)**__ _ successors:goto() _ "}" {
                 ast::BasicBlock { name, statements, successors }
             }
         )
@@ -154,6 +155,9 @@ peg::parser! {
             t.to_string()
         }
 
+        rule sp<T>(t: rule<T>) -> Sp<T> = start:position!() inner:t() end:position!() {
+            inner.at(Span::new(start, end))
+        }
     }
 }
 

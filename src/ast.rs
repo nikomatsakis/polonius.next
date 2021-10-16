@@ -1,3 +1,5 @@
+use crate::span::Spanned as Sp;
+
 #[derive(Clone, Debug)]
 pub struct Program {
     pub struct_decls: Vec<StructDecl>,
@@ -36,7 +38,7 @@ pub enum GenericDecl {
 #[derive(Clone, Debug)]
 pub struct BasicBlock {
     pub name: Name,
-    pub statements: Vec<Statement>,
+    pub statements: Vec<Sp<Statement>>,
     pub successors: Vec<Name>,
 }
 
