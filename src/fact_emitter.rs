@@ -112,7 +112,11 @@ impl<'a> FactEmitter<'a> {
             }
         }
 
-        Self { input, program, loans }
+        Self {
+            input,
+            program,
+            loans,
+        }
     }
 
     fn emit_facts(&self, facts: &mut Facts) {
@@ -579,7 +583,8 @@ impl fmt::Display for Facts {
                     } else {
                         None
                     }
-                }).unwrap_or("(pass)");
+                })
+                .unwrap_or("(pass)");
             writeln!(f, "{}: {:?} {{", node, node_text)?;
 
             // Emit all facts first

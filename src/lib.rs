@@ -1,9 +1,9 @@
-mod span;
 mod ast;
 mod ast_parser;
 mod fact_emitter;
 mod fact_parser;
 mod graphviz;
+mod span;
 
 use std::{path::PathBuf, process::Command};
 
