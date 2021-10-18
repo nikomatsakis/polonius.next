@@ -117,4 +117,24 @@ pub struct Place {
     pub projections: Vec<Projection>,
 }
 
+
+impl Place {
+    /// Two places are disjoint if one is not a prefix of the other.
+    pub fn is_disjoint(&self, other: &Place) -> bool {
+        if self.base != other.base {
+            return true;
+        }
+
+        self.projections
+            .iter()
+            .zip(other.projections.iter())
+            .any(|(a, b)| a != b)
+    }
+
+    pub fn num_derefs(&self) -> usize {
+        self.projections.iter().filter(|p| p.is_deref()).count()
+    }
+}
+
+
 pub type Name = String;
