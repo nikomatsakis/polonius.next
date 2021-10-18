@@ -298,6 +298,9 @@ fn struct_test() {
                 generic_decls: [
                     Origin(
                         "'me",
+                        Bounds(
+                            [],
+                        ),
                     ),
                     Ty(
                         "T",
@@ -388,6 +391,9 @@ fn fn_test() {
                 generic_decls: [
                     Origin(
                         "'v",
+                        Bounds(
+                            [],
+                        ),
                     ),
                     Ty(
                         "T",
