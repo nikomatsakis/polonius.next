@@ -9,7 +9,7 @@ use std::fmt;
 #[derive(Default, PartialEq, Eq, Clone)]
 struct Origin(String);
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq, Clone)]
 struct Node(String);
 
 impl<S> From<S> for Origin
@@ -130,15 +130,15 @@ impl<'a> FactEmitter<'a> {
         self.emit_cfg_edges(&bb, facts);
 
         for (idx, s) in bb.statements.iter().enumerate() {
+            let node = self.node_at(&bb.name, idx);
+
             // Emit `node_text` for this statement: the line from where it was parsed
             // in the original input program.
             let statement_text = {
                 let span = s.span();
                 self.input[span.start()..span.end() - 1].to_string()
             };
-            facts
-                .node_text
-                .push((statement_text, self.node_at(&bb.name, idx)));
+            facts.node_text.push((statement_text, node.clone()));
 
             match &**s {
                 Statement::Assign(place, expr) => {
@@ -147,9 +147,7 @@ impl<'a> FactEmitter<'a> {
 
                     // Assignments clear all origins in the type
                     for origin in &lhs_origins {
-                        facts
-                            .clear_origin
-                            .push((origin.clone(), self.node_at(&bb.name, idx)));
+                        facts.clear_origin.push((origin.clone(), node.clone()));
                     }
 
                     if !lhs_ty.is_ref() {
@@ -164,37 +162,33 @@ impl<'a> FactEmitter<'a> {
                                 // TODO: if the `location` where the loan was issued can't
                                 // reach the current location, there is no need to emit
                                 // the invalidation
-                                facts
-                                    .invalidate_origin
-                                    .push((origin.clone(), self.node_at(&bb.name, idx)));
+                                facts.invalidate_origin.push((origin.clone(), node.clone()));
                             }
                         }
                     }
 
                     // Emit facts about the assignment RHS: evaluate the `expr`
-                    self.emit_expr_facts(bb, idx, expr, facts);
+                    self.emit_expr_facts(&node, expr, facts);
 
                     // Relate the LHS and RHS tys
-                    self.emit_subset_facts(bb, idx, &lhs_ty, expr, facts);
+                    self.emit_subset_facts(&node, &lhs_ty, expr, facts);
                 }
 
                 Statement::Expr(expr) => {
                     // Evaluate the `expr`
-                    self.emit_expr_facts(bb, idx, expr, facts);
+                    self.emit_expr_facts(&node, expr, facts);
                 }
             }
         }
     }
 
-    fn emit_expr_facts(&self, bb: &BasicBlock, idx: usize, expr: &Expr, facts: &mut Facts) {
+    fn emit_expr_facts(&self, node: &Node, expr: &Expr, facts: &mut Facts) {
         match expr {
             Expr::Access { kind, place } => {
                 match kind {
                     // Borrowing clears its origin: it's issuing a fresh origin of the same name
                     AccessKind::Borrow(origin) | AccessKind::BorrowMut(origin) => {
-                        facts
-                            .clear_origin
-                            .push((origin.into(), self.node_at(&bb.name, idx)));
+                        facts.clear_origin.push((origin.into(), node.clone()));
 
                         if matches!(kind, AccessKind::BorrowMut(_)) {
                             // A mutable borrow is considered a write to the place:
@@ -202,9 +196,7 @@ impl<'a> FactEmitter<'a> {
                             // 1) it accesses the origins in the type
                             let (_, origins) = self.ty_and_origins_of_place(place);
                             for origin in origins {
-                                facts
-                                    .access_origin
-                                    .push((origin.clone(), self.node_at(&bb.name, idx)));
+                                facts.access_origin.push((origin.clone(), node.clone()));
                             }
 
                             // 2) and invalidates existing loans of that place
@@ -218,9 +210,7 @@ impl<'a> FactEmitter<'a> {
                             //
                             if let Some(loans) = self.loans.get(place) {
                                 for (origin, _) in loans {
-                                    facts
-                                        .invalidate_origin
-                                        .push((origin.clone(), self.node_at(&bb.name, idx)));
+                                    facts.invalidate_origin.push((origin.clone(), node.clone()));
                                 }
                             }
                         }
@@ -235,9 +225,7 @@ impl<'a> FactEmitter<'a> {
                         // Reads access all the origins in their type
                         let (_, origins) = self.ty_and_origins_of_place(place);
                         for origin in origins {
-                            facts
-                                .access_origin
-                                .push((origin.into(), self.node_at(&bb.name, idx)));
+                            facts.access_origin.push((origin.into(), node.clone()));
                         }
                     }
                 }
@@ -247,7 +235,7 @@ impl<'a> FactEmitter<'a> {
                 // Calls evaluate their arguments
                 arguments
                     .iter()
-                    .for_each(|expr| self.emit_expr_facts(bb, idx, expr, facts));
+                    .for_each(|expr| self.emit_expr_facts(&node, expr, facts));
 
                 // TODO: Depending on the signature of the function, some subsets can be introduced
                 // between the arguments to the call
@@ -270,14 +258,7 @@ impl<'a> FactEmitter<'a> {
     // We're in an assignment and we assume the LHS and RHS have the same shape,
     // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
     //
-    fn emit_subset_facts(
-        &self,
-        bb: &BasicBlock,
-        idx: usize,
-        lhs_ty: &Ty,
-        rhs_expr: &Expr,
-        facts: &mut Facts,
-    ) {
+    fn emit_subset_facts(&self, node: &Node, lhs_ty: &Ty, rhs_expr: &Expr, facts: &mut Facts) {
         match lhs_ty {
             Ty::Ref {
                 origin: target_origin,
@@ -288,11 +269,9 @@ impl<'a> FactEmitter<'a> {
                 ..
             } => {
                 let mut emit_subset_fact = |source_origin, target_origin| {
-                    facts.introduce_subset.push((
-                        source_origin,
-                        target_origin,
-                        self.node_at(&bb.name, idx),
-                    ));
+                    facts
+                        .introduce_subset
+                        .push((source_origin, target_origin, node.clone()));
                 };
 
                 match rhs_expr {
