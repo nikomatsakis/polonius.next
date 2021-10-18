@@ -1,0 +1,58 @@
+---
+source: src/ast_parser/test.rs
+expression: "expect_parse(\"fn foo<'a, 'b: 'a, 'c: 'a + 'b>(_: &'a i32, _: &'b i32, _: &'c i32) -> &'a i32;\")"
+
+---
+Program {
+    struct_decls: [],
+    fn_prototypes: [
+        FnPrototype {
+            name: "foo",
+            generic_decls: [
+                Origin(
+                    "'a",
+                    Bounds(
+                        [],
+                    ),
+                ),
+                Origin(
+                    "'b",
+                    Bounds(
+                        [
+                            "'a",
+                        ],
+                    ),
+                ),
+                Origin(
+                    "'c",
+                    Bounds(
+                        [
+                            "'a",
+                            "'b",
+                        ],
+                    ),
+                ),
+            ],
+            arg_tys: [
+                Ref {
+                    origin: "'a",
+                    ty: I32,
+                },
+                Ref {
+                    origin: "'b",
+                    ty: I32,
+                },
+                Ref {
+                    origin: "'c",
+                    ty: I32,
+                },
+            ],
+            ret_ty: Ref {
+                origin: "'a",
+                ty: I32,
+            },
+        },
+    ],
+    variables: [],
+    basic_blocks: [],
+}

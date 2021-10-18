@@ -421,3 +421,10 @@ fn fn_test() {
     }
     "###);
 }
+
+#[test]
+fn fn_origin_bound_test() {
+    insta::assert_debug_snapshot!(expect_parse(
+        "fn foo<'a, 'b: 'a, 'c: 'a + 'b>(_: &'a i32, _: &'b i32, _: &'c i32) -> &'a i32;",
+    ));
+}
