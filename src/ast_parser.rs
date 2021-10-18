@@ -127,16 +127,28 @@ peg::parser! {
         )
 
         rule expr() -> ast::Expr = (
-            kind:access_kind() _ place:place() { ast::Expr::Access { kind, place } } /
+            kind:access_kind() _ place:place() { ast::Expr::Access(ast::ExprAccess { kind, place }) } /
             n:$(['0'..='9']+) { ast::Expr::Number { value: i32::from_str(n).unwrap() } } /
             name:ident() _ "(" _ arguments:expr()**comma() _ ")" { ast::Expr::Call { name, arguments} } /
             "(" _ ")" { ast::Expr::Unit }
         )
 
-        rule place() -> ast::Place = (
-            base:ident() _ dot() _ fields:ident()**dot() { ast::Place { base, fields } } /
-            base:ident() { ast::Place { base, fields: vec![] } }
-        )
+        rule place() -> ast::Place = precedence!{
+            "*" _ inner:@ {
+                let mut inner = inner;
+                inner.projections.push(ast::Projection::Deref);
+                inner
+            }
+            --
+            inner:@ _ "." _ field:ident() {
+                let mut inner = inner;
+                inner.projections.push(ast::Projection::Field(field));
+                inner
+            }
+            --
+            base:ident() { ast::Place { base, projections: vec![] } }
+            "(" _ inner:place() _ ")" { inner }
+        }
 
         rule access_kind() -> ast::AccessKind = (
             "copy" { ast::AccessKind::Copy } /
@@ -145,13 +157,11 @@ peg::parser! {
             "&" _ o:origin_ident() { ast::AccessKind::Borrow(o) }
         )
 
-        rule dot() -> () = _ "." _
-
-        rule ident() -> ast::Name = t:$(['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' | '*' ]+) {
+        rule ident() -> ast::Name = t:$(['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' ]+) {
             t.to_string()
         }
 
-        rule origin_ident() -> ast::Name = t:$("'"['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' | '*' ]+) {
+        rule origin_ident() -> ast::Name = t:$("'"['a'..='z' | 'A'..='Z' | '_' | '0' ..= '9' ]+) {
             t.to_string()
         }
 

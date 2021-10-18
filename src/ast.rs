@@ -1,3 +1,5 @@
+use derive_more::IsVariant;
+
 use crate::span::Spanned as Sp;
 
 #[derive(Clone, Debug)]
@@ -53,10 +55,16 @@ pub enum Statement {
 
 #[derive(Clone, Debug)]
 pub enum Expr {
-    Access { kind: AccessKind, place: Place },
+    Access(ExprAccess),
     Number { value: i32 },
     Call { name: Name, arguments: Vec<Expr> },
     Unit,
+}
+
+#[derive(Clone, Debug)]
+pub struct ExprAccess {
+    pub place: Place,
+    pub kind: AccessKind,
 }
 
 #[derive(Clone, Debug)]
@@ -95,10 +103,40 @@ pub enum Parameter {
     Ty(Ty),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, IsVariant)]
+pub enum Projection {
+    Field(Name),
+    Deref,
+}
+
 #[derive(Clone, Debug)]
 pub struct Place {
     pub base: Name,
-    pub fields: Vec<Name>,
+
+    /// Any projections on `base`, starting from the innermost one.
+    ///
+    /// For example, `x.f1.f2` would give `vec!["f1", "f2"]`.
+    pub projections: Vec<Projection>,
 }
+
+
+impl Place {
+    /// Two places are disjoint if one is not a prefix of the other.
+    pub fn is_disjoint(&self, other: &Place) -> bool {
+        if self.base != other.base {
+            return true;
+        }
+
+        self.projections
+            .iter()
+            .zip(other.projections.iter())
+            .any(|(a, b)| a != b)
+    }
+
+    pub fn num_derefs(&self) -> usize {
+        self.projections.iter().filter(|p| p.is_deref()).count()
+    }
+}
+
 
 pub type Name = String;

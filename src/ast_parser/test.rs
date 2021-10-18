@@ -65,7 +65,7 @@ fn statement_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -113,7 +113,7 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -128,17 +128,19 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "y",
-                                fields: [],
+                                projections: [],
                             },
-                            Access {
-                                kind: Borrow(
-                                    "'y",
-                                ),
-                                place: Place {
-                                    base: "x",
-                                    fields: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Borrow(
+                                        "'y",
+                                    ),
                                 },
-                            },
+                            ),
                         ),
                     },
                     Spanned {
@@ -149,17 +151,19 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "z",
-                                fields: [],
+                                projections: [],
                             },
-                            Access {
-                                kind: BorrowMut(
-                                    "'z",
-                                ),
-                                place: Place {
-                                    base: "x",
-                                    fields: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: BorrowMut(
+                                        "'z",
+                                    ),
                                 },
-                            },
+                            ),
                         ),
                     },
                 ],
@@ -228,7 +232,7 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -243,15 +247,17 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "y",
-                                fields: [],
+                                projections: [],
                             },
-                            Access {
-                                kind: Copy,
-                                place: Place {
-                                    base: "x",
-                                    fields: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Copy,
                                 },
-                            },
+                            ),
                         ),
                     },
                     Spanned {
@@ -262,15 +268,17 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "z",
-                                fields: [],
+                                projections: [],
                             },
-                            Access {
-                                kind: Move,
-                                place: Place {
-                                    base: "x",
-                                    fields: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Move,
                                 },
-                            },
+                            ),
                         ),
                     },
                 ],
@@ -420,4 +428,18 @@ fn fn_test() {
         basic_blocks: [],
     }
     "###);
+}
+
+#[test]
+fn proj_test() {
+    let p = expect_parse(
+        "
+        let x: ();
+        bb0: {
+            move *(*x.f).f2.f3;
+        }
+    ",
+    );
+
+    insta::assert_debug_snapshot!(p);
 }
