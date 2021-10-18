@@ -127,7 +127,7 @@ peg::parser! {
         )
 
         rule expr() -> ast::Expr = (
-            kind:access_kind() _ place:place() { ast::Expr::Access { kind, place } } /
+            kind:access_kind() _ place:place() { ast::Expr::Access(ast::ExprAccess { kind, place }) } /
             n:$(['0'..='9']+) { ast::Expr::Number { value: i32::from_str(n).unwrap() } } /
             name:ident() _ "(" _ arguments:expr()**comma() _ ")" { ast::Expr::Call { name, arguments} } /
             "(" _ ")" { ast::Expr::Unit }

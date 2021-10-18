@@ -53,10 +53,16 @@ pub enum Statement {
 
 #[derive(Clone, Debug)]
 pub enum Expr {
-    Access { kind: AccessKind, place: Place },
+    Access(ExprAccess),
     Number { value: i32 },
     Call { name: Name, arguments: Vec<Expr> },
     Unit,
+}
+
+#[derive(Clone, Debug)]
+pub struct ExprAccess {
+    pub place: Place,
+    pub kind: AccessKind,
 }
 
 #[derive(Clone, Debug)]
