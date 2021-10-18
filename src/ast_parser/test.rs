@@ -130,15 +130,17 @@ fn borrow_test() {
                                 base: "y",
                                 projections: [],
                             },
-                            Access {
-                                kind: Borrow(
-                                    "'y",
-                                ),
-                                place: Place {
-                                    base: "x",
-                                    projections: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Borrow(
+                                        "'y",
+                                    ),
                                 },
-                            },
+                            ),
                         ),
                     },
                     Spanned {
@@ -151,15 +153,17 @@ fn borrow_test() {
                                 base: "z",
                                 projections: [],
                             },
-                            Access {
-                                kind: BorrowMut(
-                                    "'z",
-                                ),
-                                place: Place {
-                                    base: "x",
-                                    projections: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: BorrowMut(
+                                        "'z",
+                                    ),
                                 },
-                            },
+                            ),
                         ),
                     },
                 ],
@@ -245,13 +249,15 @@ fn copy_move_test() {
                                 base: "y",
                                 projections: [],
                             },
-                            Access {
-                                kind: Copy,
-                                place: Place {
-                                    base: "x",
-                                    projections: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Copy,
                                 },
-                            },
+                            ),
                         ),
                     },
                     Spanned {
@@ -264,13 +270,15 @@ fn copy_move_test() {
                                 base: "z",
                                 projections: [],
                             },
-                            Access {
-                                kind: Move,
-                                place: Place {
-                                    base: "x",
-                                    projections: [],
+                            Access(
+                                ExprAccess {
+                                    place: Place {
+                                        base: "x",
+                                        projections: [],
+                                    },
+                                    kind: Move,
                                 },
-                            },
+                            ),
                         ),
                     },
                 ],

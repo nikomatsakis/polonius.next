@@ -22,25 +22,27 @@ Program {
                         end: 66,
                     },
                     inner: Expr(
-                        Access {
-                            kind: Move,
-                            place: Place {
-                                base: "x",
-                                projections: [
-                                    Field(
-                                        "f",
-                                    ),
-                                    Deref,
-                                    Field(
-                                        "f2",
-                                    ),
-                                    Field(
-                                        "f3",
-                                    ),
-                                    Deref,
-                                ],
+                        Access(
+                            ExprAccess {
+                                place: Place {
+                                    base: "x",
+                                    projections: [
+                                        Field(
+                                            "f",
+                                        ),
+                                        Deref,
+                                        Field(
+                                            "f2",
+                                        ),
+                                        Field(
+                                            "f3",
+                                        ),
+                                        Deref,
+                                    ],
+                                },
+                                kind: Move,
                             },
-                        },
+                        ),
                     ),
                 },
             ],
