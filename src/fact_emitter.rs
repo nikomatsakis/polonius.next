@@ -252,70 +252,206 @@ impl<'a> FactEmitter<'a> {
     //
     // TODO: handles simple subsets only for now, complete this.
     //
-    // TODO: if the `expr` is a call, we probably also need subsets between
-    // the arguments, the return value and the LHS ?
-    //
     // We're in an assignment and we assume the LHS and RHS have the same shape,
     // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
     //
     fn emit_subset_facts(&self, node: &Node, lhs_ty: &Ty, rhs_expr: &Expr, facts: &mut Facts) {
-        match lhs_ty {
+        // Subset relationships are computed with respect to the variance rules.
+        // https://doc.rust-lang.org/reference/subtyping.html#variance
+        //
+        // In the context of an assignment, the subsets follow the flow of data, and origins on the
+        // RHS will flow into the ones on the LHS.
+        //
+        // We don't support function types in structs or function parameters at the moment, so
+        // there's no contravariant relationships yet.
+
+        let (lhs_ty, target_origin, variance) = match lhs_ty {
             Ty::Ref {
                 origin: target_origin,
-                ..
-            }
-            | Ty::RefMut {
-                origin: target_origin,
-                ..
-            } => {
-                let mut emit_subset_fact = |source_origin, target_origin| {
-                    facts
-                        .introduce_subset
-                        .push((source_origin, target_origin, node.clone()));
-                };
+                ty: lhs_ty,
+            } => (lhs_ty, target_origin, Variance::Covariant),
 
-                match rhs_expr {
-                    Expr::Access {
-                        kind:
-                            AccessKind::Borrow(source_origin) | AccessKind::BorrowMut(source_origin),
-                        ..
+            Ty::RefMut {
+                origin: target_origin,
+                ty: lhs_ty,
+            } => (lhs_ty, target_origin, Variance::Invariant),
+
+            _ => {
+                // no origins flow to the LHS
+                return;
+            }
+        };
+
+        let (rhs_ty, source_origin) = match rhs_expr {
+            Expr::Access {
+                kind: AccessKind::Borrow(source_origin),
+                place,
+            } => {
+                assert!(
+                    variance == Variance::Covariant,
+                    "The LHS must be a shared reference for this Borrow to be relatable"
+                );
+                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                (rhs_ty, source_origin)
+            }
+
+            Expr::Access {
+                kind: AccessKind::BorrowMut(source_origin),
+                place,
+            } => {
+                assert!(
+                    variance == Variance::Invariant,
+                    "The LHS must be a unique reference for this BorrowMut to be relatable"
+                );
+                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                (rhs_ty, source_origin)
+            }
+
+            Expr::Access {
+                kind: AccessKind::Copy | AccessKind::Move,
+                place,
+            } => {
+                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                match rhs_ty {
+                    Ty::Ref {
+                        origin: source_origin,
+                        ty: rhs_ty,
                     } => {
-                        emit_subset_fact(source_origin.into(), target_origin.into());
+                        assert!(
+                            variance == Variance::Covariant,
+                            "The LHS must be a shared reference for this Ref to be relatable"
+                        );
+                        (rhs_ty.as_ref(), source_origin)
                     }
 
-                    Expr::Access {
-                        kind: AccessKind::Copy | AccessKind::Move,
-                        place,
+                    Ty::RefMut {
+                        origin: source_origin,
+                        ty: rhs_ty,
                     } => {
-                        let (rhs_ty, _) = self.ty_and_origins_of_place(place);
-                        match rhs_ty {
-                            Ty::Ref {
-                                origin: source_origin,
-                                ..
-                            }
-                            | Ty::RefMut {
-                                origin: source_origin,
-                                ..
-                            } => {
-                                emit_subset_fact(source_origin.into(), target_origin.into());
-                            }
-
-                            _ => {
-                                // The RHS has no refs, there are no subsets to emit
-                            }
-                        }
+                        assert!(
+                            variance == Variance::Invariant,
+                            "The LHS must be a unique reference for this RefMut to be relatable"
+                        );
+                        (rhs_ty.as_ref(), source_origin)
                     }
 
                     _ => {
-                        // The expr is not borrowing anything, there are no
-                        // subsets to emit
+                        // no origins flow from the RHS
+                        return;
                     }
                 }
             }
 
-            _ => {
-                // The LHS contains no origins, there are no subsets to emit
+            Expr::Call { .. } => {
+                // TODO: emit potential subsets between the arguments to the call, and the
+                // return value, as required by the function's signature
+                return;
             }
+
+            _ => {
+                // no origins flow from the RHS
+                return;
+            }
+        };
+
+        facts
+            .introduce_subset
+            .push((source_origin.into(), target_origin.into(), node.clone()));
+
+        self.relate_tys(node, lhs_ty, rhs_ty, variance, facts);
+    }
+
+    // Emit subset relationships between the two types' parameters, according to the
+    // variance rules, recursively.
+    fn relate_tys(
+        &self,
+        node: &Node,
+        lhs_ty: &Ty,
+        rhs_ty: &Ty,
+        variance: Variance,
+        facts: &mut Facts,
+    ) {
+        match (lhs_ty, rhs_ty) {
+            (
+                Ty::Struct {
+                    parameters: lhs_args,
+                    ..
+                },
+                Ty::Struct {
+                    parameters: rhs_args,
+                    ..
+                },
+            ) => {
+                // Relate the arguments to the generic structs pair-wise, according to variance
+                for (lhs_arg, rhs_arg) in lhs_args.iter().zip(rhs_args.iter()) {
+                    match (lhs_arg, rhs_arg) {
+                        (
+                            Parameter::Ty(
+                                param
+                                @
+                                Ty::Ref {
+                                    origin: target_origin,
+                                    ty: lhs_ty,
+                                },
+                            ),
+                            Parameter::Ty(Ty::Ref {
+                                origin: source_origin,
+                                ty: rhs_ty,
+                            }),
+                        )
+                        | (
+                            Parameter::Ty(
+                                param
+                                @
+                                Ty::RefMut {
+                                    origin: target_origin,
+                                    ty: lhs_ty,
+                                },
+                            ),
+                            Parameter::Ty(Ty::RefMut {
+                                origin: source_origin,
+                                ty: rhs_ty,
+                            }),
+                        ) => {
+                            // Emit covariant subset
+                            facts.introduce_subset.push((
+                                source_origin.into(),
+                                target_origin.into(),
+                                node.clone(),
+                            ));
+
+                            if variance == Variance::Invariant {
+                                // Emit inverse subset
+                                facts.introduce_subset.push((
+                                    target_origin.into(),
+                                    source_origin.into(),
+                                    node.clone(),
+                                ));
+                            }
+
+                            // unique references change the relationships of their children
+                            // parameter pairs: they must be invariant.
+                            let variance = if matches!(param, Ty::RefMut { .. }) {
+                                Variance::Invariant
+                            } else {
+                                variance
+                            };
+
+                            self.relate_tys(node, &lhs_ty, &rhs_ty, variance, facts);
+                        }
+
+                        (Parameter::Ty(lhs_ty), Parameter::Ty(rhs_ty)) => {
+                            // TODO: variance can also change if the type is special here:
+                            // e.g. UnsafeCell
+                            self.relate_tys(node, &lhs_ty, &rhs_ty, variance, facts);
+                        }
+
+                        _ => todo!(),
+                    }
+                }
+            }
+
+            _ => {}
         }
     }
 
@@ -455,6 +591,12 @@ impl<'a> FactEmitter<'a> {
 
         node.into()
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Variance {
+    Covariant,
+    Invariant,
 }
 
 impl Ty {
