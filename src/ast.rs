@@ -1,3 +1,5 @@
+use derive_more::IsVariant;
+
 use crate::span::Spanned as Sp;
 
 #[derive(Clone, Debug)]
@@ -101,7 +103,7 @@ pub enum Parameter {
     Ty(Ty),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, IsVariant)]
 pub enum Projection {
     Field(Name),
     Deref,
