@@ -19,7 +19,7 @@ fn expect_parse(s: &str) -> ast::Program {
 fn let_test() {
     let p = expect_parse(
         "
-        let x: i32; 
+        let x: i32;
     ",
     );
 
@@ -286,7 +286,7 @@ fn struct_test() {
     let p = expect_parse(
         "struct Iter<'me, T> { vec: &'me Vec<T>, position: i32 }
         struct Vec<T> { item0: T }
-        
+
     ",
     );
 
