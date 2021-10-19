@@ -6,6 +6,7 @@ mod introduce_subset;
 mod invalidate_origin;
 
 // Tests porting the existing examples using the manual fact format, to the new frontend format
+mod example_canonical_liveness;
 mod example_issue_47680;
 mod example_vec_temp;
 
