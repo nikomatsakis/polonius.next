@@ -1,20 +1,15 @@
-// Tests dedicated to specific relations
+//! Tests dedicated to specific relations
 mod access_origin;
 mod cfg_edge;
 mod clear_origin;
 mod introduce_subset;
 mod invalidate_origin;
 
-// Tests porting the existing examples using the manual fact format, to the new frontend format
-mod example_canonical_liveness;
-mod example_issue_47680;
-mod example_vec_temp;
-
 use super::*;
 use crate::ast_parser::test::expect_parse;
-use insta::{assert_debug_snapshot, assert_display_snapshot};
+use insta::assert_debug_snapshot;
 
-fn expect_facts(input: &str) -> Facts {
+pub(crate) fn expect_facts(input: &str) -> Facts {
     let program = expect_parse(input);
     let emitter = FactEmitter::new(program, input, true);
     let mut facts = Default::default();
@@ -169,44 +164,4 @@ fn origins_in_ty() {
         find_origins("let f: &'f Vec<&'e Vec<&'d i32>>;", "f"),
         [Origin::from("'f"), Origin::from("'e"), Origin::from("'d")]
     );
-}
-
-#[test]
-// Port of /polonius.next/tests/example-a/program.txt
-fn example_a() {
-    let program = "
-        let x: i32;
-        let y: &'y i32;
-
-        bb0: {
-            x = 3;
-            y = &'L_x x;
-            x = 4;
-            use(move y);
-        }
-    ";
-
-    assert_display_snapshot!(expect_facts(program), @r###"
-    a: "x = 3" {
-    	invalidate_origin('L_x)
-    	goto b
-    }
-
-    b: "y = &'L_x x" {
-    	clear_origin('y)
-    	clear_origin('L_x)
-    	introduce_subset('L_x, 'y)
-    	goto c
-    }
-
-    c: "x = 4" {
-    	invalidate_origin('L_x)
-    	goto d
-    }
-
-    d: "use(move y)" {
-    	access_origin('y)
-    	goto
-    }
-    "###);
 }

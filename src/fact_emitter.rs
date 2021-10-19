@@ -1,5 +1,10 @@
+// Tests dedicated to specific relations
 #[cfg(test)]
 mod test;
+
+// Tests porting the existing examples using the manual fact format, to the new frontend format
+#[cfg(test)]
+mod examples;
 
 use crate::ast::*;
 use crate::ast_parser::parse_ast;
@@ -43,7 +48,7 @@ impl fmt::Debug for Node {
 }
 
 #[derive(Default, Debug)]
-struct Facts {
+pub(crate) struct Facts {
     access_origin: Vec<(Origin, Node)>,
     cfg_edge: Vec<(Node, Node)>,
     clear_origin: Vec<(Origin, Node)>,
