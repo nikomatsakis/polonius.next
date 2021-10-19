@@ -55,7 +55,7 @@ struct Facts {
 #[allow(dead_code)]
 fn emit_facts(input: &str) -> eyre::Result<Facts> {
     let program = parse_ast(input)?;
-    let emitter = FactEmitter::new(program, input);
+    let emitter = FactEmitter::new(program, input, false);
     let mut facts = Default::default();
     emitter.emit_facts(&mut facts);
     Ok(facts)
@@ -83,10 +83,11 @@ struct FactEmitter<'a> {
     input: &'a str,
     program: Program,
     loans: HashMap<Place, Vec<(Origin, Location)>>,
+    simple_node_names: bool,
 }
 
 impl<'a> FactEmitter<'a> {
-    fn new(program: Program, input: &'a str) -> Self {
+    fn new(program: Program, input: &'a str, simple_node_names: bool) -> Self {
         // Collect loans from borrow expressions present in the program
         let mut loans: HashMap<Place, Vec<(Origin, Location)>> = HashMap::new();
 
@@ -116,6 +117,7 @@ impl<'a> FactEmitter<'a> {
             input,
             program,
             loans,
+            simple_node_names,
         }
     }
 
@@ -570,15 +572,17 @@ impl<'a> FactEmitter<'a> {
 
         // Hack: if we temporarily need simpler node names, while comparing to the manual facts:
         // use single-letter names.
-        if std::env::var("SIMPLE_NODES").is_ok() {
+        if self.simple_node_names || std::env::var("SIMPLE_NODES").is_ok() {
             // Make the block-local statement idx refer to a concatenated list of all
             // statements: adding the number of statements prior to this block.
+            // (Here as well, count as if there's always at least one statement per block,
+            // to account for empty blocks with a goto)
             let bb_statement_start_idx = self
                 .program
                 .basic_blocks
                 .iter()
                 .take_while(|bb| block != bb.name)
-                .fold(0, |acc, bb| acc + bb.statements.len());
+                .fold(0, |acc, bb| acc + bb.statements.len().max(1));
             let node_idx = 'a' as u32 + (bb_statement_start_idx + statement_idx) as u32;
             let node_as_letter = char::from_u32(node_idx).unwrap_or_else(|| {
                 panic!(

@@ -15,7 +15,7 @@ use insta::{assert_debug_snapshot, assert_display_snapshot};
 
 fn expect_facts(input: &str) -> Facts {
     let program = expect_parse(input);
-    let emitter = FactEmitter::new(program, input);
+    let emitter = FactEmitter::new(program, input, true);
     let mut facts = Default::default();
     emitter.emit_facts(&mut facts);
     facts
@@ -24,7 +24,7 @@ fn expect_facts(input: &str) -> Facts {
 // Returns the type and collected origins, of the given place's path in the given program.
 fn ty_and_origins_of_place(input: &str, path: &str) -> (Ty, Vec<Origin>) {
     let program = expect_parse(input);
-    let emitter = FactEmitter::new(program, input);
+    let emitter = FactEmitter::new(program, input, true);
 
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
     let base = path.remove(0);
