@@ -34,6 +34,12 @@ fn issue_47680() {
             goto bb1;
         }
     ";
+
+    // Notes about the current output:
+    // - node b: missing subset because of the deref
+    // - node c: missing subset between the arguments, the fn signatures lack lifetime bounds
+    // - node d: missing clear origin of a loan of the deref
+
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "temp = &'L_Thing mut thing" {
     	invalidate_origin('L_Thing)
