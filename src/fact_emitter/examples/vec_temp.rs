@@ -4,6 +4,11 @@ use insta::assert_display_snapshot;
 #[test]
 // Port of /polonius.next/tests/vec-temp/program.txt
 fn vec_temp() {
+    // FIXME: while having `tmp` hold mutable references is interesting to test variance,
+    // and is faithful to the manual test format example, it's not what the comments at the
+    // top of the example are expressing. Clean this up into two separate examples.
+    // (Also: clean up the `Vec::len` call in that example, since this function 
+    // takes a reference and not `v`)
     let program = "
         let x: i32;
         let v: Vec<&'v mut i32>;
@@ -17,9 +22,13 @@ fn vec_temp() {
             tmp = &'L_v mut v;
             Vec_push(move tmp, move p);
             x = 23;
-            Vec_len(copy v);
+            Vec_len(move v);
         }
     ";
+
+    // Notes about the current output:
+    // - node e: missing subset between the call's arguments, the fn signatures lack lifetime bounds
+
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "x = 22" {
     	invalidate_origin('L_x)
@@ -63,7 +72,7 @@ fn vec_temp() {
     	goto g
     }
 
-    g: "Vec_len(copy v)" {
+    g: "Vec_len(move v)" {
     	access_origin('v)
     	goto
     }
