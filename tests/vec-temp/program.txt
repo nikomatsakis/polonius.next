@@ -1,10 +1,10 @@
 // let mut x = 22;
 // let mut v = vec![];
 // let p = &x;
-// let mut tmp = &mut v;
+// let tmp = &mut v;
 // Vec::push(tmp, p);
 // x = 23;
-// Vec::len(v); // ERROR
+// Vec::len(&v); // ERROR
 
 // Decls
 // let x: u32
