@@ -1,7 +1,7 @@
 // Corresponds to `canonical-liveness`, but with the "saving" re-assignment to `x` removed.
 
-// let p = 22;
-// let x: &u32 = &p; // `x` points at `p`
+// let mut p = 22;
+// let x = &p; // `x` points at `p`
 // p += 1; // invalidates borrow of `p`
 // use(x); // ERROR
 

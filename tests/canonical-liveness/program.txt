@@ -1,6 +1,6 @@
 // let mut p = 22;
 // let q = 44;
-// let mut x: &u32 = &p; // `x` points at `p`
+// let mut x = &p; // `x` points at `p`
 // x = &q; // `x` points at `q`
 // p += 1; // OK, because `x` no longer borrows `p`
 // use(x); // also OK
