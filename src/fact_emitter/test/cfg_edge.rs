@@ -28,8 +28,8 @@ fn single_block_edges() {
     assert_debug_snapshot!(expect_facts(program).cfg_edge, @r###"
     [
         (
-            "bb0[0]",
-            "bb0[1]",
+            "a",
+            "b",
         ),
     ]
     "###);
@@ -47,8 +47,8 @@ fn single_sucessor_block() {
     assert_debug_snapshot!(expect_facts(program).cfg_edge, @r###"
     [
         (
-            "bb0[0]",
-            "bb1[0]",
+            "a",
+            "b",
         ),
     ]
     "###);
@@ -67,12 +67,12 @@ fn multiple_successor_blocks() {
     assert_debug_snapshot!(expect_facts(program).cfg_edge, @r###"
     [
         (
-            "bb0[0]",
-            "bb1[0]",
+            "a",
+            "b",
         ),
         (
-            "bb0[0]",
-            "bb2[0]",
+            "a",
+            "c",
         ),
     ]
     "###);

@@ -18,7 +18,7 @@ fn assignments_to_references() {
             .clear_origin
             .into_iter()
             .find(|(origin, _)| origin.0 == "'ref"),
-        Some(("'ref".into(), "bb0[1]".into()))
+        Some(("'ref".into(), "b".into()))
     );
 }
 
@@ -38,15 +38,15 @@ fn all_origins_in_type_are_cleared_on_assignments_to_references() {
     [
         (
             "'ref",
-            "bb0[0]",
+            "a",
         ),
         (
             "'vec",
-            "bb0[0]",
+            "a",
         ),
         (
             "'L_v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -67,7 +67,7 @@ fn all_origins_in_type_are_cleared_on_assignments() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -91,7 +91,7 @@ fn shared_borrows_clear_their_origin() {
             .clear_origin
             .into_iter()
             .find(|(origin, _)| origin.0 == "'L_i"),
-        Some(("'L_i".into(), "bb0[1]".into()))
+        Some(("'L_i".into(), "b".into()))
     );
 }
 
@@ -113,6 +113,6 @@ fn mut_borrows_clear_their_origin() {
             .clear_origin
             .into_iter()
             .find(|(origin, _)| origin.0 == "'L_i"),
-        Some(("'L_i".into(), "bb0[1]".into()))
+        Some(("'L_i".into(), "b".into()))
     );
 }

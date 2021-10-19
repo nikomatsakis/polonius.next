@@ -186,24 +186,24 @@ fn example_a() {
     ";
 
     assert_display_snapshot!(expect_facts(program), @r###"
-    bb0[0]: "x = 3" {
+    a: "x = 3" {
     	invalidate_origin('L_x)
-    	goto bb0[1]
+    	goto b
     }
 
-    bb0[1]: "y = &'L_x x" {
+    b: "y = &'L_x x" {
     	clear_origin('y)
     	clear_origin('L_x)
     	introduce_subset('L_x, 'y)
-    	goto bb0[2]
+    	goto c
     }
 
-    bb0[2]: "x = 4" {
+    c: "x = 4" {
     	invalidate_origin('L_x)
-    	goto bb0[3]
+    	goto d
     }
 
-    bb0[3]: "use(move y)" {
+    d: "use(move y)" {
     	access_origin('y)
     	goto
     }

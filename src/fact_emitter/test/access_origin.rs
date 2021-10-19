@@ -18,7 +18,7 @@ fn assignments_read_rhs() {
     [
         (
             "'ref",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -38,7 +38,7 @@ fn assignments_read_rhs() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -58,11 +58,11 @@ fn assignments_read_rhs() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
         (
             "'data_v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -84,7 +84,7 @@ fn function_calls_read_arguments() {
     [
         (
             "'ref",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -103,7 +103,7 @@ fn function_calls_read_arguments() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -122,11 +122,11 @@ fn function_calls_read_arguments() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
         (
             "'data",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -149,7 +149,7 @@ fn mutable_borrows_are_considered_writes() {
     [
         (
             "'v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);

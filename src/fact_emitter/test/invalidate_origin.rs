@@ -17,7 +17,7 @@ fn assignment_to_non_references() {
     [
         (
             "'L_x",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -35,7 +35,7 @@ fn assignment_to_non_references() {
     [
         (
             "'L_v",
-            "bb0[0]",
+            "a",
         ),
     ]
     "###);
@@ -58,11 +58,11 @@ fn mut_borrows_invalidate_loans() {
     [
         (
             "'L_x",
-            "bb0[0]",
+            "a",
         ),
         (
             "'L_x",
-            "bb0[1]",
+            "b",
         ),
     ]
     "###);

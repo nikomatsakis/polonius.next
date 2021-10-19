@@ -21,25 +21,25 @@ fn vec_temp() {
         }
     ";
     assert_display_snapshot!(expect_facts(program), @r###"
-    bb0[0]: "x = 22" {
+    a: "x = 22" {
     	invalidate_origin('L_x)
-    	goto bb0[1]
+    	goto b
     }
 
-    bb0[1]: "v = Vec_new()" {
+    b: "v = Vec_new()" {
     	invalidate_origin('L_v)
     	clear_origin('v)
-    	goto bb0[2]
+    	goto c
     }
 
-    bb0[2]: "p = &'L_x x" {
+    c: "p = &'L_x x" {
     	clear_origin('p)
     	clear_origin('L_x)
     	introduce_subset('L_x, 'p)
-    	goto bb0[3]
+    	goto d
     }
 
-    bb0[3]: "tmp = &'L_v mut v" {
+    d: "tmp = &'L_v mut v" {
     	access_origin('v)
     	invalidate_origin('L_v)
     	clear_origin('tmp0)
@@ -48,22 +48,22 @@ fn vec_temp() {
     	introduce_subset('L_v, 'tmp0)
     	introduce_subset('v, 'tmp1)
     	introduce_subset('tmp1, 'v)
-    	goto bb0[4]
+    	goto e
     }
 
-    bb0[4]: "Vec_push(move tmp, move p)" {
+    e: "Vec_push(move tmp, move p)" {
     	access_origin('tmp0)
     	access_origin('tmp1)
     	access_origin('p)
-    	goto bb0[5]
+    	goto f
     }
 
-    bb0[5]: "x = 23" {
+    f: "x = 23" {
     	invalidate_origin('L_x)
-    	goto bb0[6]
+    	goto g
     }
 
-    bb0[6]: "Vec_len(copy v)" {
+    g: "Vec_len(copy v)" {
     	access_origin('v)
     	goto
     }
