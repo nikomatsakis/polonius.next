@@ -59,6 +59,11 @@ e: "Vec::push(tmp, p)" {
 
     // Signature requires `&'p u32` <: `&'tmp1 u32`:
     introduce_subset('p, 'tmp1)
+
+    // `tmp` is moved into `push`
+    kill_origin('tmp0)
+    kill_origin('tmp1)
+
     goto f
 
 }

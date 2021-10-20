@@ -80,6 +80,9 @@ f: "use(x)" {
 
     // Invalidate borrows that contain the used path `x`
     invalidate_origin('L_*x)
+
+    // `x` is moved into `use`
+    kill_origin('x)
     
     goto g
 }

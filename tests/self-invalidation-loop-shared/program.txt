@@ -76,5 +76,12 @@ e: "Vec::push(v_tmp, p)" {
     // Signature requires `&'p u32` <: `&'tmp1 u32`:
     introduce_subset('p, 'tmp1)
 
+    // `p` is now `Copy`, but goes out of scope
+    kill_origin('p)
+
+    // `v_tmp` is moved into `push`
+    kill_origin('tmp0)
+    kill_origin('tmp1)
+
     goto c
 }

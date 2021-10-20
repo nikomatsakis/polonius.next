@@ -1,6 +1,6 @@
-// let p = 22;
+// let mut p = 22;
 // let q = 44;
-// let mut x: &i32 = &p; // `x` points at `p`
+// let mut x: &u32 = &p; // `x` points at `p`
 // x = &q; // `x` points at `q`
 // p += 1; // OK, because `x` no longer borrows `p`
 // use(x); // also OK
@@ -8,7 +8,7 @@
 // Decls
 // let p: u32
 // let q: u32
-// let x: &'x mut u32
+// let x: &'x u32
 // 
 // Loan origins:
 // 'L_p: `x`'s borrow of `p` 
@@ -58,7 +58,7 @@ e: "p += 1" {
 }
 
 f: "use(x)" {
-    // Access `x` [== `&q`] where `x: &'x mut u32`
+    // Access `x` [== `&q`] where `x: &'x u32`
     access_origin('x)
     goto
 }

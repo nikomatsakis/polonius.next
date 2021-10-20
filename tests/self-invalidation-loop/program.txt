@@ -10,7 +10,7 @@
 // let x: u32
 // let v: Vec<&'v mut u32>
 // let p: &'p mut u32
-// let v_tmp: &'tmp0 Vec<&'tmp1 mut u32>
+// let v_tmp: &'tmp0 mut Vec<&'tmp1 mut u32>
 // 
 // Loan origins:
 // 'L_x: `p`'s borrow of `x` 
@@ -76,6 +76,13 @@ e: "Vec::push(v_tmp, p)" {
 
     // Signature requires `&'p mut u32` <: `&'tmp1 mut u32`:
     introduce_subset('p, 'tmp1)
+
+    // `p` is moved into `push`
+    kill_origin('p)
+
+    // `v_tmp` is moved into `push`
+    kill_origin('tmp0)
+    kill_origin('tmp1)
 
     goto c 
 }

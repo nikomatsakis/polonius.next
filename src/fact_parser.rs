@@ -87,6 +87,7 @@ const EXPECTED_FACT_NAMES: &[&str] = &[
     "access_origin",
     "cfg_edge",
     "clear_origin",
+    "kill_origin",
     "introduce_subset",
     "invalidate_origin",
 ];

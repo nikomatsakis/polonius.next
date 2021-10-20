@@ -16,5 +16,6 @@ c: "x = 4" {
 
 d: "drop(y)" {
     access_origin('y)
+    kill_origin('y)
     goto
 }

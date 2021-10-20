@@ -51,6 +51,8 @@
 //          * If `P = *Q` where `Q: &'O T`, then error (mut borrow of shared content)
 //          * If `P = *Q` where `Q: &'O mut T`, then `'L_P <= O` and continue "unrolling" `Q`
 // * Generate `introduce_subset` for subsets that arise from where-clauses or subtyping on this node
+//
+// * Generate `kill_origin` for all origins within the type of a variable where the variable stops being live.
 
 // access_origin data with origin `o` at node `n`
 .decl access_origin(o: Origin, n: Node)
@@ -59,6 +61,10 @@
 // Invalidate the origin `o` at the node `n`
 .decl invalidate_origin(o: Origin, n: Node)
 .input invalidate_origin
+
+// Kill the origin `o` at the node `n`
+.decl kill_origin(o: Origin, n: Node)
+.input kill_origin
 
 // All references with origin `o` are overwritten at node `n`
 .decl clear_origin(o: Origin, n: Node)
@@ -73,14 +79,43 @@
 .input cfg_edge
 
 /////////////////////////////////////////////
+.decl subset_within_node(o1: Origin, o2: Origin, n: Node)
+.output subset_within_node
+
+subset_within_node(O1, O2, N1) :- // Pre-existing subsets
+  subset(O1, O2, N1).
+
+subset_within_node(O1, O2, N1) :- // New subsets
+  introduce_subset(O1, O2, N1).
+
+subset_within_node(O1, O3, N1) :- // Transitive closure
+  subset_within_node(O1, O2, N1),
+  subset_within_node(O2, O3, N1).
+
+/////////////////////////////////////////////
 .decl subset(o1: Origin, o2: Origin, n: Node)
 .output subset
 
 subset(O1, O2, N2) :- // Introduced by predecessor
+  !kill_origin(O1, N1),
+  !kill_origin(O2, N1),
   cfg_edge(N1, N2),
   introduce_subset(O1, O2, N1).
 
+// Transitive closure from predecessor
+// (through potentially killed intermediates)
+subset(O1, O3, N2) :- 
+  !kill_origin(O1, N1),
+  !kill_origin(O3, N1),
+  !clear_origin(O1, N1),
+  !clear_origin(O3, N1),
+  cfg_edge(N1, N2),
+  subset_within_node(O1, O2, N1),
+  subset_within_node(O2, O3, N1).
+
 subset(O1, O2, N2) :- // Carried over from predecessor
+  !kill_origin(O1, N1),
+  !kill_origin(O2, N1),
   cfg_edge(N1, N2),
   subset(O1, O2, N1),
   !clear_origin(O1, N1),

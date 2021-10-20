@@ -61,5 +61,8 @@ e: "use(p)" {
     // Access `p` [== `&'p x`] where `x: u32`
     access_origin('p)
 
+    // `p` is moved into `use`
+    kill_origin('p)
+
     goto 
 }
