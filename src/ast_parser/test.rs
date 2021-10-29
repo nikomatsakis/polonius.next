@@ -65,7 +65,7 @@ fn statement_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -113,7 +113,7 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -128,7 +128,7 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "y",
-                                fields: [],
+                                projections: [],
                             },
                             Access {
                                 kind: Borrow(
@@ -136,7 +136,7 @@ fn borrow_test() {
                                 ),
                                 place: Place {
                                     base: "x",
-                                    fields: [],
+                                    projections: [],
                                 },
                             },
                         ),
@@ -149,7 +149,7 @@ fn borrow_test() {
                         inner: Assign(
                             Place {
                                 base: "z",
-                                fields: [],
+                                projections: [],
                             },
                             Access {
                                 kind: BorrowMut(
@@ -157,7 +157,7 @@ fn borrow_test() {
                                 ),
                                 place: Place {
                                     base: "x",
-                                    fields: [],
+                                    projections: [],
                                 },
                             },
                         ),
@@ -228,7 +228,7 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "x",
-                                fields: [],
+                                projections: [],
                             },
                             Number {
                                 value: 22,
@@ -243,13 +243,13 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "y",
-                                fields: [],
+                                projections: [],
                             },
                             Access {
                                 kind: Copy,
                                 place: Place {
                                     base: "x",
-                                    fields: [],
+                                    projections: [],
                                 },
                             },
                         ),
@@ -262,13 +262,13 @@ fn copy_move_test() {
                         inner: Assign(
                             Place {
                                 base: "z",
-                                fields: [],
+                                projections: [],
                             },
                             Access {
                                 kind: Move,
                                 place: Place {
                                     base: "x",
-                                    fields: [],
+                                    projections: [],
                                 },
                             },
                         ),
@@ -420,4 +420,18 @@ fn fn_test() {
         basic_blocks: [],
     }
     "###);
+}
+
+#[test]
+fn proj_test() {
+    let p = expect_parse(
+        "
+        let x: ();
+        bb0: {
+            move *(*x.f).f2.f3;
+        }
+    ",
+    );
+
+    insta::assert_debug_snapshot!(p);
 }

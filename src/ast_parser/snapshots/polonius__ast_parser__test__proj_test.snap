@@ -1,0 +1,50 @@
+---
+source: src/ast_parser/test.rs
+expression: p
+
+---
+Program {
+    struct_decls: [],
+    fn_prototypes: [],
+    variables: [
+        VariableDecl {
+            name: "x",
+            ty: Unit,
+        },
+    ],
+    basic_blocks: [
+        BasicBlock {
+            name: "bb0",
+            statements: [
+                Spanned {
+                    span: Span {
+                        start: 47,
+                        end: 66,
+                    },
+                    inner: Expr(
+                        Access {
+                            kind: Move,
+                            place: Place {
+                                base: "x",
+                                projections: [
+                                    Field(
+                                        "f",
+                                    ),
+                                    Deref,
+                                    Field(
+                                        "f2",
+                                    ),
+                                    Field(
+                                        "f3",
+                                    ),
+                                    Deref,
+                                ],
+                            },
+                        },
+                    ),
+                },
+            ],
+            successors: [],
+        },
+    ],
+}
