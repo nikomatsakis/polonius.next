@@ -77,55 +77,45 @@
 .input cfg_edge
 
 /////////////////////////////////////////////
-.decl origin_live_after(o: Origin, n: Node)
-.output origin_live_after
+.decl origin_live_on_entry(o: Origin, n: Node)
+.output origin_live_on_entry
 
 // Note that accesses come before clears, so we check on the outgoing edges.
-origin_live_after(O, N1) :- 
-  cfg_edge(N1, N2),
-  access_origin(O, N2).
+origin_live_on_entry(O, N) :- 
+  access_origin(O, N).
 
-origin_live_after(O, N1) :- 
+origin_live_on_entry(O, N1) :- 
   cfg_edge(N1, N2),
-  !clear_origin(O, N2),
-  origin_live_after(O, N2).
+  !clear_origin(O, N1),
+  origin_live_on_entry(O, N2).
 
 /////////////////////////////////////////////
-.decl subset_within_node(o1: Origin, o2: Origin, n: Node)
-.output subset_within_node
+.decl subset_on_exit(o1: Origin, o2: Origin, n: Node)
+.output subset_on_exit
 
-subset_within_node(O1, O2, N1) :- // Pre-existing subsets
-  subset(O1, O2, N1).
+subset_on_exit(O1, O2, N) :- // Filter out clears
+  subset_on_entry(O1, O2, N),
+  !clear_origin(O1, N),
+  !clear_origin(O2, N).
 
-subset_within_node(O1, O2, N1) :- // New subsets
-  introduce_subset(O1, O2, N1).
+subset_on_exit(O1, O2, N) :- // New subsets
+  introduce_subset(O1, O2, N).
 
-subset_within_node(O1, O3, N1) :- // Transitive closure
-  subset_within_node(O1, O2, N1),
-  subset_within_node(O2, O3, N1).
+subset_on_exit(O1, O3, N1) :- // Transitive closure
+  subset_on_exit(O1, O2, N1),
+  subset_on_exit(O2, O3, N1).
 
 /////////////////////////////////////////////
-.decl subset(o1: Origin, o2: Origin, n: Node)
-.output subset
+.decl subset_on_entry(o1: Origin, o2: Origin, n: Node)
+.output subset_on_entry
 
 // Carried over from predecessor.
-// Subsets are filtered from the `subset_within_node` transitive closure.
-subset(O1, O2, N2) :- 
-  (origin_live_after(O1, N1); mark_as_loan_origin(O1)),
-  (origin_live_after(O2, N1); mark_as_loan_origin(O2)),
+// Subsets are filtered from the `subset_on_exit` transitive closure.
+subset_on_entry(O1, O2, N2) :- 
   cfg_edge(N1, N2),
-  subset_within_node(O1, O2, N1),
-  !clear_origin(O1, N1),
-  !clear_origin(O2, N1).
-
-// Introduced by predecessor.
-// These are only filtered for killed origins, not cleared ones, 
-// because the clear happens conceptually before they are established.
-subset(O1, O2, N2) :- 
-  (origin_live_after(O1, N1); mark_as_loan_origin(O1)),
-  (origin_live_after(O2, N1); mark_as_loan_origin(O2)),
-  cfg_edge(N1, N2),
-  introduce_subset(O1, O2, N1).
+  (origin_live_on_entry(O1, N2); mark_as_loan_origin(O1)),
+  (origin_live_on_entry(O2, N2); mark_as_loan_origin(O2)),
+  subset_on_exit(O1, O2, N1).
 
 ////////////////////////////////////////////
 .decl origin_invalidated(o: Origin, n: Node)
@@ -142,7 +132,7 @@ origin_invalidated(O, N2) :- // Introduced by predecessor
 origin_invalidated(O2, N2) :- 
   cfg_edge(N1, N2),
   !clear_origin(O2, N1),
-  subset(O1, O2, N1),
+  subset_on_entry(O1, O2, N1),
   invalidate_origin(O1, N1).
 
 /////////////////////////////////////////////////////
