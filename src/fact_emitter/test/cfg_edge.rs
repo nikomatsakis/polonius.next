@@ -36,7 +36,7 @@ fn single_block_edges() {
 }
 
 #[test]
-fn single_sucessor_block() {
+fn single_successor_block() {
     let program = "
         bb0: {
             goto bb1;
