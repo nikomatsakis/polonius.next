@@ -7,7 +7,7 @@ fn vec_temp() {
     // FIXME: while having `tmp` hold mutable references is interesting to test variance,
     // and is faithful to the manual test format example, it's not what the comments at the
     // top of the example are expressing. Clean this up into two separate examples.
-    // (Also: clean up the `Vec::len` call in that example, since this function 
+    // (Also: clean up the `Vec::len` call in that example, since this function
     // takes a reference and not `v`)
     let program = "
         let x: i32;

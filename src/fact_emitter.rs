@@ -394,9 +394,7 @@ impl<'a> FactEmitter<'a> {
                     match (lhs_arg, rhs_arg) {
                         (
                             Parameter::Ty(
-                                param
-                                @
-                                Ty::Ref {
+                                param @ Ty::Ref {
                                     origin: target_origin,
                                     ty: lhs_ty,
                                 },
@@ -408,9 +406,7 @@ impl<'a> FactEmitter<'a> {
                         )
                         | (
                             Parameter::Ty(
-                                param
-                                @
-                                Ty::RefMut {
+                                param @ Ty::RefMut {
                                     origin: target_origin,
                                     ty: lhs_ty,
                                 },
@@ -577,7 +573,9 @@ impl<'a> FactEmitter<'a> {
 
         // Hack: if we temporarily need simpler node names, while comparing to the manual facts:
         // use single-letter names.
-        if self.simple_node_names || std::env::var("SIMPLE_NODES").is_ok() {
+        let use_simple_node_names = std::env::var("SIMPLE_NODES").is_ok();
+
+        if self.simple_node_names || use_simple_node_names {
             // Make the block-local statement idx refer to a concatenated list of all
             // statements: adding the number of statements prior to this block.
             // (Here as well, count as if there's always at least one statement per block,
