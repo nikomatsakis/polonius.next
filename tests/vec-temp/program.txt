@@ -47,7 +47,7 @@ d: "tmp = &'L_v mut v" {
     // &'1 mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
     introduce_subset('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
-    introduce_subset('L_v, 'tmp1)
+    introduce_subset('v, 'tmp1)
     goto e
 }
 

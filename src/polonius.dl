@@ -99,6 +99,9 @@ origin_invalidated(O, N2) :- // Introduced by predecessor
   !clear_origin(O, N1),
   (invalidate_origin(O, N1); origin_invalidated(O, N1)).
 
+// Because invalidations conceptually happen before clears, 
+// propagate them across (existing, not introduced) subset relationships
+// even if `O1` is also (conceptually later) cleared in `N1`.
 origin_invalidated(O2, N2) :- 
   cfg_edge(N1, N2),
   !clear_origin(O2, N1),
