@@ -17,27 +17,29 @@ pub(crate) fn expect_facts(input: &str) -> Facts {
     facts
 }
 
-// Returns the type and collected origins, of the given place's path in the given program.
-fn ty_and_origins_of_place(input: &str, path: &str) -> (Ty, Vec<Origin>) {
+fn create_emitter(input: &str) -> FactEmitter {
     let program = expect_parse(input);
-    let emitter = FactEmitter::new(program, input, true);
+    FactEmitter::new(program, input, true)
+}
 
+fn place_at_path(path: &str) -> Place {
     let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
     let base = path.remove(0);
-    let place = Place { base, fields: path };
-
-    let (ty, origins) = emitter.ty_and_origins_of_place(&place);
-    (ty.clone(), origins)
+    Place { base, fields: path }
 }
 
 // Returns the type of the given place's path in the given program.
 fn find_ty(program: &str, path: &str) -> Ty {
-    ty_and_origins_of_place(program, path).0.clone()
+    let emitter = create_emitter(program);
+    let place = place_at_path(path);
+    emitter.ty_of_place(&place).clone()
 }
 
 // Returns the origins present in the type of the given place's path in the given program.
 fn find_origins(program: &str, path: &str) -> Vec<Origin> {
-    ty_and_origins_of_place(program, path).1
+    let emitter = create_emitter(program);
+    let place = place_at_path(path);
+    emitter.origins_of_place(&place)
 }
 
 #[test]

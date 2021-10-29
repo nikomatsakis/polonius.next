@@ -150,7 +150,8 @@ impl<'a> FactEmitter<'a> {
             match &**s {
                 Statement::Assign(place, expr) => {
                     // Emit facts about the assignment LHS
-                    let (lhs_ty, lhs_origins) = self.ty_and_origins_of_place(place);
+                    let lhs_ty = self.ty_of_place(place);
+                    let lhs_origins = self.origins_of_place(place);
 
                     // Assignments clear all origins in the type
                     for origin in &lhs_origins {
@@ -201,7 +202,7 @@ impl<'a> FactEmitter<'a> {
                             // A mutable borrow is considered a write to the place:
                             //
                             // 1) it accesses the origins in the type
-                            let (_, origins) = self.ty_and_origins_of_place(place);
+                            let origins = self.origins_of_place(place);
                             for origin in origins {
                                 facts.access_origin.push((origin.clone(), node.clone()));
                             }
@@ -230,7 +231,7 @@ impl<'a> FactEmitter<'a> {
                         // or invalidations)
 
                         // Reads access all the origins in their type
-                        let (_, origins) = self.ty_and_origins_of_place(place);
+                        let origins = self.origins_of_place(place);
                         for origin in origins {
                             facts.access_origin.push((origin.into(), node.clone()));
                         }
@@ -298,7 +299,7 @@ impl<'a> FactEmitter<'a> {
                     variance == Variance::Covariant,
                     "The LHS must be a shared reference for this Borrow to be relatable"
                 );
-                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                let rhs_ty = self.ty_of_place(place);
                 (rhs_ty, source_origin)
             }
 
@@ -310,7 +311,7 @@ impl<'a> FactEmitter<'a> {
                     variance == Variance::Invariant,
                     "The LHS must be a unique reference for this BorrowMut to be relatable"
                 );
-                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                let rhs_ty = self.ty_of_place(place);
                 (rhs_ty, source_origin)
             }
 
@@ -318,7 +319,7 @@ impl<'a> FactEmitter<'a> {
                 kind: AccessKind::Copy | AccessKind::Move,
                 place,
             } => {
-                let (rhs_ty, _) = self.ty_and_origins_of_place(place);
+                let rhs_ty = self.ty_of_place(place);
                 match rhs_ty {
                     Ty::Ref {
                         origin: source_origin,
@@ -432,7 +433,7 @@ impl<'a> FactEmitter<'a> {
                                 ));
                             }
 
-                            // unique references change the relationships of their children
+                            // Unique references change the relationships of their children
                             // parameter pairs: they must be invariant.
                             let variance = if matches!(param, Ty::RefMut { .. }) {
                                 Variance::Invariant
@@ -479,9 +480,22 @@ impl<'a> FactEmitter<'a> {
         }
     }
 
-    fn ty_and_origins_of_place(&self, place: &Place) -> (&Ty, Vec<Origin>) {
-        let mut origins = Vec::new();
+    fn ty_of_place(&self, place: &Place) -> &Ty {
+        self.walk_place_tys(place, |_| ())
+    }
 
+    fn origins_of_place(&self, place: &Place) -> Vec<Origin> {
+        let mut origins = Vec::new();
+        self.walk_place_tys(place, |ty| {
+            ty.collect_origins_into(&mut origins);
+        });
+        origins
+    }
+
+    fn walk_place_tys<F>(&self, place: &Place, mut ty_walked_callback: F) -> &Ty
+    where
+        F: FnMut(&Ty),
+    {
         // The `base` is always a variable of the program, but can be deref'd.
         let base = if let Some(deref_base) = place.deref_base() {
             deref_base
@@ -504,8 +518,8 @@ impl<'a> FactEmitter<'a> {
 
             // Find the type of each field in sequence, to return the last field's type
             place.fields.iter().fold(&v.ty, |ty, field_name| {
-                // Collect origins present in the current field parent's ty
-                ty.collect_origins_into(&mut origins);
+                // Notify a traversal step was taken for the current field parent's ty
+                ty_walked_callback(ty);
 
                 // Find the struct decl for the parent's ty
                 let (struct_name, struct_substs) = match ty {
@@ -559,13 +573,13 @@ impl<'a> FactEmitter<'a> {
             })
         };
 
-        // Collect origins for either:
+        // Notify a step in the walk was taken, either:
         // - the `base` ty, when there are no fields
-        // - the last field's ty, from the place's `fields` list. The origins of the previous
-        // fields in the list having already been collected just above.
-        ty.collect_origins_into(&mut origins);
+        // - the last field's ty, from the place's `fields` list. The callbacks for the previous
+        // fields in the list have already been processed in the loop just above.
+        ty_walked_callback(ty);
 
-        (ty, origins)
+        ty
     }
 
     fn node_at(&self, block: &str, statement_idx: usize) -> Node {
