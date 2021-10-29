@@ -10,11 +10,14 @@
 // let x: u32
 // let v: Vec<&'v mut u32>
 // let p: &'p mut u32
-// let v_tmp: &'tmp0 Vec<&'tmp1 mut u32>
+// let v_tmp: &'tmp0 mut Vec<&'tmp1 mut u32>
 // 
 // Loan origins:
 // 'L_x: `p`'s borrow of `x` 
 // 'L_v: temporary borrow of `v` for `Vec::push`
+
+mark_as_loan_origin('L_x)
+mark_as_loan_origin('L_v)
 
 a: "x = 22" {
     invalidate_origin('L_x)

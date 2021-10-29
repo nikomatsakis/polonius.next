@@ -21,6 +21,9 @@
 // t0: &'t0 mut Thing
 // v: &'v mut Thing
 
+mark_as_loan_origin('L_Thing)
+mark_as_loan_origin('L_*temp)
+
 a: "temp = &'L_Thing mut Thing" {
     introduce_subset('L_Thing, 'temp)
     goto b
@@ -56,6 +59,7 @@ c: "v = MaybeNext(t0)" {
 
     // MaybeNext has sig `fn(&mut Thing) -> &mut Thing` (ignore the option for now)
     introduce_subset('t0, 'v)
+
     goto d e
 }
 
@@ -72,6 +76,7 @@ d: "temp = v" {
 
     // Data from `'v` is flowing into `'temp`
     introduce_subset('v, 'temp)
+
     goto f
 }
 

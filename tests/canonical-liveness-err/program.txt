@@ -1,16 +1,18 @@
 // Corresponds to `canonical-liveness`, but with the "saving" re-assignment to `x` removed.
 
 // let p = 22;
-// let mut x: &i32 = &p; // `x` points at `p`
+// let x: &u32 = &p; // `x` points at `p`
 // p += 1; // invalidates borrow of `p`
 // use(x); // ERROR
 
 // Decls
 // let p: u32
-// let x: &'x mut u32
+// let x: &'x u32
 // 
 // Loan origins:
 // 'L_p: `x`'s borrow of `p` 
+
+mark_as_loan_origin('L_p)
 
 a: "p = 22" {
     invalidate_origin('L_p)
@@ -39,7 +41,7 @@ c: "p += 1" {
 }
 
 d: "use(x)" {
-    // Access `x` [== `&q`] where `x: &'x mut u32`
+    // Access `x` [== `&q`] where `x: &'x u32`
     access_origin('x)
     goto
 }

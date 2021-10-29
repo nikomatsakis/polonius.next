@@ -18,6 +18,10 @@
 // 'L_*x: `y`'s borrow of `*x`
 // 'L_q: `x`'s borrow of `q`
 
+mark_as_loan_origin('L_p)
+mark_as_loan_origin('L_*x)
+mark_as_loan_origin('L_q)
+
 a: "p = 22" {
     invalidate_origin('L_p)
     goto b
@@ -80,7 +84,7 @@ f: "use(x)" {
 
     // Invalidate borrows that contain the used path `x`
     invalidate_origin('L_*x)
-    
+
     goto g
 }
 

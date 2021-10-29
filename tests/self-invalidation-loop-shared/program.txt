@@ -18,6 +18,9 @@
 // 'L_x: `p`'s borrow of `x` 
 // 'L_v: temporary borrow of `v` for `Vec::push`
 
+mark_as_loan_origin('L_x)
+mark_as_loan_origin('L_v)
+
 a: "x = 22" {
     invalidate_origin('L_x)
     goto b

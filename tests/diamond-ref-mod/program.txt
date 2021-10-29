@@ -15,6 +15,9 @@
 // 'const: `p`'s borrow of `22`
 // 'L_x: `p`'s borrow of `x` 
 
+mark_as_loan_origin('const)
+mark_as_loan_origin('L_x)
+
 a: "x = 42" {
     invalidate_origin('L_x)
     goto b

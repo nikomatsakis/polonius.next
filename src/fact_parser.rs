@@ -1,9 +1,9 @@
 //! Parser for "fact files", a compact way to represent facts.
 //!
 //! ```notrust
-//! Program    := Statement,
+//! Program    := Fact* Statement,
 //! Statement  := Ident: String { Fact* goto Ident* }
-//! Fact       := Ident ( Symbol, )
+//! Fact       := Ident ( Symbol, )*
 //! Ident      := [a-zA-Z_][a-zA-Z_0-9]*    /* regular expression */
 //! Symbol     := Ident | 'Ident
 //! String     := "[^"]*"   /* regular expression */
@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 pub struct Program {
+    pub global_facts: Vec<Fact>,
     pub statements: Vec<Statement>,
 }
 
@@ -31,8 +32,11 @@ pub struct Fact {
 
 peg::parser! {
     grammar fact_parser() for str {
-        pub rule program() -> Program = comment()* _ n:statement()**__ {
-            Program { statements: n }
+        pub rule program() -> Program = comment()* _ g:fact()**__ _ n:statement()**__ {
+            Program {
+                global_facts: g,
+                 statements: n
+            }
         }
 
         rule _ = quiet!{[' ' | '\n']*}
@@ -83,7 +87,8 @@ pub fn generate_facts(input: &str, output_path: &Path) -> eyre::Result<()> {
     Ok(())
 }
 
-const EXPECTED_FACT_NAMES: &[&str] = &[
+const EXPECTED_GLOBAL_FACT_NAMES: &[&str] = &["mark_as_loan_origin"];
+const EXPECTED_LOCAL_FACT_NAMES: &[&str] = &[
     "access_origin",
     "cfg_edge",
     "clear_origin",
@@ -95,11 +100,29 @@ const EXPECTED_FACT_NAMES: &[&str] = &[
 fn collect_facts(program: &Program) -> eyre::Result<HashMap<String, Vec<Vec<String>>>> {
     let mut facts = HashMap::new();
 
-    for expected in EXPECTED_FACT_NAMES.iter() {
+    for expected in EXPECTED_GLOBAL_FACT_NAMES
+        .iter()
+        .chain(EXPECTED_LOCAL_FACT_NAMES.iter())
+    {
         facts.insert(expected.to_string(), vec![]);
     }
     facts.insert("node_text".to_string(), vec![]);
     facts.insert("cfg_edge".to_string(), vec![]);
+
+    for global_fact in &program.global_facts {
+        if !EXPECTED_GLOBAL_FACT_NAMES.contains(&global_fact.name.as_str()) {
+            return Err(eyre::eyre!(
+                "unexpected global fact name `{}`, valid names are `{:?}`",
+                global_fact.name,
+                EXPECTED_GLOBAL_FACT_NAMES
+            ));
+        }
+
+        facts
+            .get_mut(&global_fact.name)
+            .unwrap()
+            .push(global_fact.arguments.iter().cloned().collect());
+    }
 
     // When a statement S has a fact F(A0, .., An),
     // we insert a mapping F -> [A0, .., An, S] into
@@ -118,14 +141,14 @@ fn collect_facts(program: &Program) -> eyre::Result<HashMap<String, Vec<Vec<Stri
         }
 
         for fact in &statement.facts {
-            if !EXPECTED_FACT_NAMES
+            if !EXPECTED_LOCAL_FACT_NAMES
                 .iter()
                 .any(|expected| *expected == fact.name)
             {
                 return Err(eyre::eyre!(
                     "unexpected fact name `{}`, valid names are `{:?}`",
                     fact.name,
-                    EXPECTED_FACT_NAMES
+                    EXPECTED_LOCAL_FACT_NAMES
                 ));
             }
 
