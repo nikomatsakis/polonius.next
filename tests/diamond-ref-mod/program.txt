@@ -15,6 +15,9 @@
 // 'const: `p`'s borrow of `22`
 // 'L_x: `p`'s borrow of `x` 
 
+mark_as_loan_origin('const)
+mark_as_loan_origin('L_x)
+
 a: "x = 42" {
     invalidate_origin('L_x)
     goto b
@@ -60,9 +63,6 @@ d: "x = 0" {
 e: "use(p)" {
     // Access `p` [== `&'p x`] where `x: u32`
     access_origin('p)
-
-    // `p` is moved into `use`
-    kill_origin('p)
 
     goto 
 }

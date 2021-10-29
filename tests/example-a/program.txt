@@ -1,9 +1,12 @@
+mark_as_loan_origin('0)
+
 a: "x = 3" {
     invalidate_origin('0)
     goto b
 }
 
 b: "y = &'0 x" {
+    access_origin('x)
     clear_origin('0)
     introduce_subset('0, 'y)
     goto c
@@ -16,6 +19,5 @@ c: "x = 4" {
 
 d: "drop(y)" {
     access_origin('y)
-    kill_origin('y)
     goto
 }

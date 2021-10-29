@@ -14,6 +14,9 @@
 // 'L_p: `x`'s borrow of `p` 
 // 'L_q: `x`'s borrow of `q`
 
+mark_as_loan_origin('L_p)
+mark_as_loan_origin('L_q)
+
 a: "p = 22" {
     invalidate_origin('L_p)
     goto b

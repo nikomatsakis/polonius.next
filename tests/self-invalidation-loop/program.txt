@@ -16,6 +16,9 @@
 // 'L_x: `p`'s borrow of `x` 
 // 'L_v: temporary borrow of `v` for `Vec::push`
 
+mark_as_loan_origin('L_x)
+mark_as_loan_origin('L_v)
+
 a: "x = 22" {
     invalidate_origin('L_x)
     goto b
@@ -76,13 +79,6 @@ e: "Vec::push(v_tmp, p)" {
 
     // Signature requires `&'p mut u32` <: `&'tmp1 mut u32`:
     introduce_subset('p, 'tmp1)
-
-    // `p` is moved into `push`
-    kill_origin('p)
-
-    // `v_tmp` is moved into `push`
-    kill_origin('tmp0)
-    kill_origin('tmp1)
 
     goto c 
 }
