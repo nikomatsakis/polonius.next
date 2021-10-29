@@ -96,34 +96,24 @@ subset_within_node(O1, O3, N1) :- // Transitive closure
 .decl subset(o1: Origin, o2: Origin, n: Node)
 .output subset
 
-subset(O1, O2, N2) :- // Introduced by predecessor
+// Carried over from predecessor.
+// Subsets are filtered from the `subset_within_node` transitive closure.
+subset(O1, O2, N2) :- 
+  !kill_origin(O1, N1),
+  !kill_origin(O2, N1),
+  cfg_edge(N1, N2),
+  subset_within_node(O1, O2, N1),
+  !clear_origin(O1, N1),
+  !clear_origin(O2, N1).
+
+// Introduced by predecessor.
+// These are only filtered for killed origins, not cleared ones, 
+// because the clear happens conceptually before they are established.
+subset(O1, O2, N2) :- 
   !kill_origin(O1, N1),
   !kill_origin(O2, N1),
   cfg_edge(N1, N2),
   introduce_subset(O1, O2, N1).
-
-// Transitive closure from predecessor
-// (through potentially killed intermediates)
-subset(O1, O3, N2) :- 
-  !kill_origin(O1, N1),
-  !kill_origin(O3, N1),
-  !clear_origin(O1, N1),
-  !clear_origin(O3, N1),
-  cfg_edge(N1, N2),
-  subset_within_node(O1, O2, N1),
-  subset_within_node(O2, O3, N1).
-
-subset(O1, O2, N2) :- // Carried over from predecessor
-  !kill_origin(O1, N1),
-  !kill_origin(O2, N1),
-  cfg_edge(N1, N2),
-  subset(O1, O2, N1),
-  !clear_origin(O1, N1),
-  !clear_origin(O2, N1).
-
-subset(O1, O3, N1) :- // Transitive closure
-  subset(O1, O2, N1),
-  subset(O2, O3, N1).
 
 ////////////////////////////////////////////
 .decl origin_invalidated(o: Origin, n: Node)
