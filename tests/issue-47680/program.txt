@@ -137,13 +137,90 @@ d1: "temp = v" {
 
     // Data from `'v` is flowing into `'temp`
     introduce_subset('v, 'temp)
+    goto g1
+}
+
+g1: "(pass)" {
     goto f1
 }
 
 e1: "(pass)" {
+    goto h1
+}
+
+h1: "(pass)" {
     goto f1
 }
 
 f1: "(pass)" {
-    goto b1
+    goto b2
+}
+
+b2: "t0 = &'L_*temp mut *temp" {
+    // Mut borrow of `*temp` is considered a write to `*temp`
+    access_origin('temp)
+
+    // Writing to `*temp` invalidates any borrows of `*temp`
+    invalidate_origin('L_*temp)
+
+    // Overwriting `t0`
+    clear_origin('t0)
+
+    // Issuing a fresh `'L_*temp`
+    clear_origin('L_*temp)
+
+    // Because we are borrowing from `*temp`:
+    introduce_subset('temp, 'L_*temp)
+
+    // `&'L_*temp mut Thing <: &'t0 mut Thing`
+    introduce_subset('L_*temp, 't0)
+    goto c2
+}
+
+c2: "v = MaybeNext(t0)" {
+    // Read `t0`
+    access_origin('t0)
+
+    // Overwriting `v`
+    clear_origin('v)
+
+    // MaybeNext has sig `fn(&mut Thing) -> &mut Thing` (ignore the option for now)
+    introduce_subset('t0, 'v)
+    goto d2 e2
+}
+
+d2: "temp = v" {
+    // Incoming value of `v` is being read
+    access_origin('v)
+
+    // Because `temp` is being overwritten
+    clear_origin('temp)
+
+    // Anything that borrowed from `*temp`
+    // no longer is, since `temp` is something else
+    clear_origin('L_*temp)
+
+    // Data from `'v` is flowing into `'temp`
+    introduce_subset('v, 'temp)
+    goto g2
+}
+
+g2: "(pass)" {
+    goto f2
+}
+
+e2: "(pass)" {
+    goto h2
+}
+
+h2: "(pass)" {
+    goto f2
+}
+
+f2: "(pass)" {
+    goto b3
+}
+
+b3: "(pass)" {
+    goto 
 }
