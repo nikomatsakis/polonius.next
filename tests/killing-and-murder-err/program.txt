@@ -15,11 +15,8 @@
 // 'L_p: `x`'s borrow of `p` 
 // 'L_*x: `y`'s borrow of `*x`
 
-mark_as_loan_origin('L_p)
-mark_as_loan_origin('L_*x)
-
 a: "p = 22" {
-    invalidate_origin('L_p)
+    invalidate_lease('L_p)
     goto b
 }
 
@@ -31,14 +28,14 @@ b: "x = &'L_p mut p" {
     clear_origin('L_p)
 
     // `&'L_p mut u32 <: &'x mut u32`
-    introduce_subset('L_p, 'x) 
+    introduce_lease('L_p, 'x) 
     goto c
 }
 
 c: "y = &'L_*x mut *x" {
     // Access `*x` [== `p`] where `x: &'x mut u32`
     access_origin('x)
-    invalidate_origin('L_*x)
+    invalidate_lease('L_*x)
 
     // Clear all origins in `y` (overwritten plan):
     clear_origin('y)
@@ -50,7 +47,7 @@ c: "y = &'L_*x mut *x" {
     introduce_subset('x, 'L_*x)
 
     // `&'L_*x mut u32 <: &'y mut u32`
-    introduce_subset('L_*x, 'y) 
+    introduce_lease('L_*x, 'y) 
     goto d
 }
 
@@ -59,7 +56,7 @@ d: "use(x)" {
     access_origin('x)
 
     // Invalidate borrows that contain the used path `x`
-    invalidate_origin('L_*x)
+    invalidate_lease('L_*x)
 
     goto e
 }

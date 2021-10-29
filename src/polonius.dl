@@ -1,5 +1,6 @@
 .type Origin <: symbol
 .type Node <: symbol
+.type Lease <: symbol
 
 /////////////////////////////////////////////
 // Inputs
@@ -9,9 +10,9 @@
 // For a given node `N`...
 // 
 // * First we perform any accesses `access_origin(O, N)`
-// * Then we invalidate any origins `invalidate_origin(L, N)`
-// * Then we clear any origins `clear_origin`
-// * Then we introduce any subsets `introduce_subset`
+// * Then we invalidate any leases `invalidate_lease(L, N)`
+// * Then we clear any origins or leases `clear_origin`, `clear_lease`
+// * Then we introduce any subsets or leases `introduce_subset`, `introduce_lease
 // 
 // This corresponds to 
 // 
@@ -25,52 +26,65 @@
 //
 // ## Rules to generate inputs:
 //
-// * For each place `P` that is read, generate `access_origin`...
+// * For each place `P` that is accessed by the expression, generate `access_origin`...
 //     * for each origin in the type of `P`
 //     * for the origin of each reference that is deref'd in `P`
 //          * e.g., `read((*x).0)` where `x: &'x0 (&'x1 u32, &'x2 u32)` would generate
 //              * `access_origin('x0)` because of the `*`
 //              * `access_origin('x1)` because the final type of `(*x).0` is `&'x1 u32`
-// * Generate `invalidate_origin` for each loan origin that is invalidated by reads/writes
+//     * leasing a place counts as an access
+// * Generate `invalidate_lease` for each loan origin that is invalidated by reads/writes
 //     * e.g., if the expression reads `x`, and there is a mut borrow `'L_mut_x` of `x`, then we would generate
-//       `invalidate_origin('L_mut_x)`
+//       `invalidate_lease('L_mut_x)`
 // * Generate `clear_origin` for each loan origin that is cleared by reads/writes
-//     * e.g., if there is a loan `'L_*temp` where `temp: &T` and this expression writes to `temp`, then `'L_*temp` is cleared,
+//     * e.g., if there is a lease `'L_*temp` where `temp: &T` and this expression writes to `temp`, then `'L_*temp` is cleared,
 //       not invalidated. This is because memory at `*temp` is not owned, so it is not freed by writing to `temp`,
 //       but `*temp` no longer names the same memory anymore.
-// * For every `&'L_P P` expression, generate `clear_origin('L_P)` 
-// * If this is a `&'L_P P` for some place `P`, it is treated as a read of the place `P`:
+// * Generate `clear_lease` for each lease of `*P` (or some suffix) when a mut reference at place `P` is overwritten 
+//     * e.g., invalidate lease `'L_*temp` when `temp = ...` (assuming `temp: &mut T`), as the
+//     `*temp` that was leased is no longer accessible under that name
+// * For every `&'L_P P` expression assigned to a place of type `&'O T`:
+//     * Generate `introduce_lease('L_P, 'O)`
+//     * Require `typeof(P) <: T`
+//     * Generate appropriate accesses/invalidations for a read from P (as stated above as well)
 //     * In addition, "unroll" P to add subset relations:
-//          * If `P = *Q` where `Q: &'O T`, then `'L_P <= O` (do not continue unrolling)
-//          * If `P = *Q` where `Q: &'O mut T`, then `'L_P <= O` and continue "unrolling" `Q`
+//          * If `P = *Q` where `Q: &'Q T`, then `'Q <= 'O` (do not continue unrolling)
+//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q <= 'O` and continue "unrolling" `Q`
 //          * Why do we continue only with `&mut`? The path we took to reach a `&` not important; the ref could just
 //            be copied out anyway. For `&mut` that path *is* important, because once we finish with our loan,
 //            it can be used to perform mutation again. We need to ensure that we remember the path we came from.
-// * If this is a `&'L_mut_P mut P` for some place `P`, it is treated as a write of the place `P`:
+// * If this is a `&'L_mut_P mut P` assigned to a place of type `&'O T`:
+//     * Generate `introduce_lease('L_P, 'O)`
+//     * Generate appropriate accesses/invalidations for a write to P (as stated above as well)
+//     * Require `typeof(P) = T`
 //     * In addition, "unroll" P to add subset relations:
-//          * If `P = *Q` where `Q: &'O T`, then error (mut borrow of shared content)
-//          * If `P = *Q` where `Q: &'O mut T`, then `'L_P <= O` and continue "unrolling" `Q`
-// * Generate `introduce_subset` for subsets that arise from where-clauses or subtyping on this node
-
-// marks the origin `o` as a loan origin
-.decl mark_as_loan_origin(o: Origin)
-.input mark_as_loan_origin
+//          * If `P = *Q` where `Q: &'Q T`, then error (mut borrow of shared content)
+//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q <= 'O` and continue "unrolling" `Q`
+// * Generate `introduce_subset` for subsets that arise from other where-clauses or type relations on this node
 
 // access_origin data with origin `o` at node `n`
 .decl access_origin(o: Origin, n: Node)
 .input access_origin
 
 // Invalidate the origin `o` at the node `n`
-.decl invalidate_origin(o: Origin, n: Node)
-.input invalidate_origin
+.decl invalidate_lease(l: Lease, n: Node)
+.input invalidate_lease
 
 // All references with origin `o` are overwritten at node `n`
 .decl clear_origin(o: Origin, n: Node)
 .input clear_origin
 
+// Lease `l` removed from all origins
+.decl clear_lease(l: Lease, n: Node)
+.input clear_lease
+
 // Require that `o1 <= o2` at node `n`
 .decl introduce_subset(o1: Origin, o2: Origin, n: Node)
 .input introduce_subset
+
+// Require that `l \in o` at node `n`
+.decl introduce_lease(l: Lease, o: Origin, n: Node)
+.input introduce_lease
 
 // Control-flow graph edge `n1 -> n2`
 .decl cfg_edge(n1: Node, n2: Node)
@@ -88,6 +102,31 @@ origin_live_on_entry(O, N1) :-
   cfg_edge(N1, N2),
   !clear_origin(O, N1),
   origin_live_on_entry(O, N2).
+
+/////////////////////////////////////////////
+.decl member_on_exit(l: Lease, o: Origin, n: Node)
+.output member_on_exit
+
+member_on_exit(L, O, N) :-
+  introduce_lease(L, O, N).
+
+member_on_exit(L, O, N) :-
+  member_on_entry(L, O, N),
+  !clear_origin(O, N),
+  !clear_lease(L, N).
+
+member_on_exit(L, O2, N) :-
+  member_on_exit(L, O1, N),
+  subset_on_exit(O1, O2, N).
+
+/////////////////////////////////////////////
+.decl member_on_entry(l: Lease, o: Origin, n: Node)
+.output member_on_entry
+
+member_on_entry(L, O, N) :-
+  cfg_edge(Npred, N),
+  member_on_exit(L, O, Npred),
+  origin_live_on_entry(O, N).
 
 /////////////////////////////////////////////
 .decl subset_on_exit(o1: Origin, o2: Origin, n: Node)
@@ -113,33 +152,35 @@ subset_on_exit(O1, O3, N1) :- // Transitive closure
 // Subsets are filtered from the `subset_on_exit` transitive closure.
 subset_on_entry(O1, O2, N2) :- 
   cfg_edge(N1, N2),
-  (origin_live_on_entry(O1, N2); mark_as_loan_origin(O1)),
-  (origin_live_on_entry(O2, N2); mark_as_loan_origin(O2)),
+  origin_live_on_entry(O1, N2),
+  origin_live_on_entry(O2, N2),
   subset_on_exit(O1, O2, N1).
 
 ////////////////////////////////////////////
-.decl origin_invalidated(o: Origin, n: Node)
-.output origin_invalidated
+.decl origin_invalidated_on_exit(o: Origin, n: Node)
+.output origin_invalidated_on_exit
 
-origin_invalidated(O, N2) :- // Introduced by predecessor
-  cfg_edge(N1, N2),
-  !clear_origin(O, N1),
-  (invalidate_origin(O, N1); origin_invalidated(O, N1)).
+origin_invalidated_on_exit(O, N) :-
+  invalidate_lease(L, N),
+  member_on_entry(L, O, N).
 
-// Because invalidations conceptually happen before clears, 
-// propagate them across (existing, not introduced) subset relationships
-// even if `O1` is also (conceptually later) cleared in `N1`.
-origin_invalidated(O2, N2) :- 
-  cfg_edge(N1, N2),
-  !clear_origin(O2, N1),
-  subset_on_entry(O1, O2, N1),
-  invalidate_origin(O1, N1).
+origin_invalidated_on_exit(O, N) :-
+  origin_invalidated_on_entry(O, N),
+  !clear_origin(O, N).
+
+////////////////////////////////////////////
+.decl origin_invalidated_on_entry(o: Origin, n: Node)
+.output origin_invalidated_on_entry
+
+origin_invalidated_on_entry(O, N) :-
+  cfg_edge(Npred, N),
+  origin_invalidated_on_exit(O, Npred).
 
 /////////////////////////////////////////////////////
 .decl invalidated_origin_accessed(o: Origin, n: Node)
 .output invalidated_origin_accessed
 
-invalidated_origin_accessed(O, N) :- // Introduced by predecessor
+invalidated_origin_accessed(O, N) :-
   access_origin(O, N),
-  origin_invalidated(O, N).
+  origin_invalidated_on_entry(O, N).
 

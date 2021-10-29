@@ -15,11 +15,8 @@
 // 'const: `p`'s borrow of `22`
 // 'L_x: `p`'s borrow of `x` 
 
-mark_as_loan_origin('const)
-mark_as_loan_origin('L_x)
-
 a: "x = 42" {
-    invalidate_origin('L_x)
+    invalidate_lease('L_x)
     goto b
 }
 
@@ -27,11 +24,8 @@ b: "p = &'const 22" {
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
-    // Clear 'const because it's being recreated
-    clear_origin('const)
-
     // `&'const u32 <: &'p u32`
-    introduce_subset('const, 'p) 
+    introduce_lease('const, 'p) 
 
     goto c d
 }
@@ -44,18 +38,15 @@ c: "p = &'L_x x" {
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
-    // Clear 'L_x because it's being recreated
-    clear_origin('L_x)
-
     // `&'L_x u32 <: &'p u32`
-    introduce_subset('L_x, 'p) 
+    introduce_lease('L_x, 'p) 
     
     goto e
 }
 
 d: "x = 0" {
     // Invalidate borrows of `x`
-    invalidate_origin('L_x)
+    invalidate_lease('L_x)
 
     goto e 
 }

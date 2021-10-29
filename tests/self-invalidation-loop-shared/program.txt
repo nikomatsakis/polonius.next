@@ -18,16 +18,13 @@
 // 'L_x: `p`'s borrow of `x` 
 // 'L_v: temporary borrow of `v` for `Vec::push`
 
-mark_as_loan_origin('L_x)
-mark_as_loan_origin('L_v)
-
 a: "x = 22" {
-    invalidate_origin('L_x)
+    invalidate_lease('L_x)
     goto b
 }
 
 b: "v = vec![]" {
-    invalidate_origin('L_v)
+    invalidate_lease('L_v)
     goto c
 }
 
@@ -37,11 +34,8 @@ c: "p = &'L_x x" {
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
-    // Clear 'L_x because it's being recreated
-    clear_origin('L_x)
-
     // `&'L_x u32 <: &'p u32`
-    introduce_subset('L_x, 'p) 
+    introduce_lease('L_x, 'p) 
     
     goto d
 }
@@ -51,17 +45,14 @@ d: "v_tmp = &'L_v mut v" {
     access_origin('v)
     
     // Invalidate borrows of `v`
-    invalidate_origin('L_v)
+    invalidate_lease('L_v)
 
     // Clear all origins in `v_tmp` (overwritten plan):
     clear_origin('tmp0)
     clear_origin('tmp1)
 
-    // Clear 'L_v because it's being recreated
-    clear_origin('L_v)
-
     // &'L_v mut Vec<&'v u32> <: &'tmp0 Vec<&'tmp1 u32>
-    introduce_subset('L_v, 'tmp0)
+    introduce_lease('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
     introduce_subset('v, 'tmp1)
 

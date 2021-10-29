@@ -14,16 +14,13 @@
 // 'L_p: `x`'s borrow of `p` 
 // 'L_q: `x`'s borrow of `q`
 
-mark_as_loan_origin('L_p)
-mark_as_loan_origin('L_q)
-
 a: "p = 22" {
-    invalidate_origin('L_p)
+    invalidate_lease('L_p)
     goto b
 }
 
 b: "q = 44" {
-    invalidate_origin('L_q)
+    invalidate_lease('L_q)
     goto c
 }
 
@@ -31,11 +28,9 @@ c: "x = &'L_p p" {
     // Clear all origins in `x` (overwritten plan):
     clear_origin('x)
 
-    // Clear 'L_p because it's being recreated
-    clear_origin('L_p)
+    // issue lease &'L_p
+    introduce_lease('L_p, 'x)
 
-    // `&'L_p u32 <: &'x u32`
-    introduce_subset('L_p, 'x) 
     goto d
 }
 
@@ -43,11 +38,8 @@ d: "x = &'L_q q" {
     // Clear all origins in `x` (overwritten plan):
     clear_origin('x)
 
-    // Clear 'L_q because it's being recreated
-    clear_origin('L_q)
-
-    // `&'L_q u32 <: &'x u32`
-    introduce_subset('L_q, 'x) 
+    // issue lease &'L_q
+    introduce_lease('L_q, 'x) 
     goto e
 }
 
@@ -55,7 +47,7 @@ e: "p += 1" {
     // Access `p` where `p: u32`
     
     // Invalidate borrows of `p`
-    invalidate_origin('L_p)
+    invalidate_lease('L_p)
 
     goto f
 }
