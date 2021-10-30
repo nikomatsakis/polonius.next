@@ -458,15 +458,15 @@ impl<'a> FactEmitter<'a> {
                                 ty: rhs_ty,
                             }),
                         ) => {
-                            // Emit covariant subset
-                            facts.introduce_subset.push((
-                                source_origin.into(),
-                                target_origin.into(),
-                                node.clone(),
-                            ));
+                            if let Variance::Covariant | Variance::Invariant = variance {
+                                facts.introduce_subset.push((
+                                    source_origin.into(),
+                                    target_origin.into(),
+                                    node.clone(),
+                                ));
+                            }
 
-                            if variance == Variance::Invariant {
-                                // Emit inverse subset
+                            if let Variance::Contravariant | Variance::Invariant = variance {
                                 facts.introduce_subset.push((
                                     target_origin.into(),
                                     source_origin.into(),
@@ -705,6 +705,10 @@ impl<'a> FactEmitter<'a> {
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum Variance {
     Covariant,
+
+    #[allow(dead_code)]
+    Contravariant,
+
     Invariant,
 }
 
