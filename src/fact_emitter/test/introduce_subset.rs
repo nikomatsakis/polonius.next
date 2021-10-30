@@ -204,3 +204,23 @@ fn chain_of_mixed_references_to_generic_type() {
     ]
     "###);
 }
+
+#[test]
+fn values_of_generic_types() {
+    let program = "
+        let a: Vec<&'a i32>;
+        let b: Vec<&'b i32>;
+        bb0: {
+            a = move b;
+        }
+    ";
+    assert_debug_snapshot!(expect_facts(program).introduce_subset, @r###"
+    [
+        (
+            "'b",
+            "'a",
+            "a",
+        ),
+    ]
+    "###);
+}

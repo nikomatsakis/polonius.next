@@ -10,6 +10,7 @@ use crate::ast::*;
 use crate::ast_parser::parse_ast;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
+use std::ops::ControlFlow;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 struct Origin(String);
@@ -258,7 +259,7 @@ impl<'a> FactEmitter<'a> {
     // TODO: do we need some type checking to ensure this assigment is valid
     // with respect to the LHS/RHS types, mutability, etc ?
     //
-    // TODO: handles simple subsets only for now, complete this.
+    // TODO: Complete this.
     //
     // We're in an assignment and we assume the LHS and RHS have the same shape,
     // for example `&'a Type<&'b i32> = &'1 Type<'2 i32>`.
@@ -273,100 +274,140 @@ impl<'a> FactEmitter<'a> {
         // We don't support function types in structs or function parameters at the moment, so
         // there's no contravariant relationships yet.
 
-        let (lhs_ty, target_origin, variance) = match lhs_ty {
-            Ty::Ref {
-                origin: target_origin,
-                ty: lhs_ty,
-            } => (lhs_ty, target_origin, Variance::Covariant),
-
-            Ty::RefMut {
-                origin: target_origin,
-                ty: lhs_ty,
-            } => (lhs_ty, target_origin, Variance::Invariant),
-
-            _ => {
-                // no origins flow to the LHS
-                return;
-            }
-        };
-
-        let (rhs_ty, source_origin) = match rhs_expr {
-            Expr::Access {
-                kind: AccessKind::Borrow(source_origin),
-                place,
-            } => {
-                assert!(
-                    variance == Variance::Covariant,
-                    "The LHS must be a shared reference for this Borrow to be relatable"
-                );
+        match (lhs_ty, rhs_expr) {
+            // `lhs = &rhs`, where lhs is a shared reference type
+            (
+                Ty::Ref {
+                    origin: target_origin,
+                    ty: lhs_ty,
+                },
+                Expr::Access {
+                    kind: AccessKind::Borrow(source_origin),
+                    place,
+                },
+            ) => {
+                facts.introduce_subset.push((
+                    source_origin.into(),
+                    target_origin.into(),
+                    node.clone(),
+                ));
                 let rhs_ty = self.ty_of_place(place);
-                (rhs_ty, source_origin)
+                self.relate_tys(node, lhs_ty, rhs_ty, Variance::Covariant, facts);
             }
 
-            Expr::Access {
-                kind: AccessKind::BorrowMut(source_origin),
-                place,
-            } => {
-                assert!(
-                    variance == Variance::Invariant,
-                    "The LHS must be a unique reference for this BorrowMut to be relatable"
-                );
-                let rhs_ty = self.ty_of_place(place);
-                (rhs_ty, source_origin)
-            }
-
-            Expr::Access {
-                kind: AccessKind::Copy | AccessKind::Move,
-                place,
-            } => {
+            // `lhs = copy or move rhs`, where lhs and rhs are shared reference types
+            (
+                Ty::Ref {
+                    origin: target_origin,
+                    ty: lhs_ty,
+                },
+                Expr::Access {
+                    kind: AccessKind::Copy | AccessKind::Move,
+                    place,
+                },
+            ) => {
                 let rhs_ty = self.ty_of_place(place);
                 match rhs_ty {
                     Ty::Ref {
                         origin: source_origin,
                         ty: rhs_ty,
                     } => {
-                        assert!(
-                            variance == Variance::Covariant,
-                            "The LHS must be a shared reference for this Ref to be relatable"
-                        );
-                        (rhs_ty.as_ref(), source_origin)
-                    }
-
-                    Ty::RefMut {
-                        origin: source_origin,
-                        ty: rhs_ty,
-                    } => {
-                        assert!(
-                            variance == Variance::Invariant,
-                            "The LHS must be a unique reference for this RefMut to be relatable"
-                        );
-                        (rhs_ty.as_ref(), source_origin)
+                        facts.introduce_subset.push((
+                            source_origin.into(),
+                            target_origin.into(),
+                            node.clone(),
+                        ));
+                        self.relate_tys(node, lhs_ty, rhs_ty, Variance::Covariant, facts);
                     }
 
                     _ => {
-                        // no origins flow from the RHS
-                        return;
+                        unreachable!(
+                            "Can't relate LHS shared ref {:?}, and RHS {:?}",
+                            lhs_ty, rhs_ty
+                        )
                     }
                 }
             }
 
-            Expr::Call { .. } => {
-                // TODO: emit potential subsets between the arguments to the call, and the
-                // return value, as required by the function's signature
-                return;
+            // `lhs = &mut rhs`, where lhs is a unique reference type
+            (
+                Ty::RefMut {
+                    origin: target_origin,
+                    ty: lhs_ty,
+                },
+                Expr::Access {
+                    kind: AccessKind::BorrowMut(source_origin),
+                    place,
+                },
+            ) => {
+                facts.introduce_subset.push((
+                    source_origin.into(),
+                    target_origin.into(),
+                    node.clone(),
+                ));
+                let rhs_ty = self.ty_of_place(place);
+                self.relate_tys(node, lhs_ty, rhs_ty, Variance::Invariant, facts);
+            }
+
+            // `lhs = copy or move rhs`, where lhs and rhs are unique reference types
+            (
+                Ty::RefMut {
+                    origin: target_origin,
+                    ty: lhs_ty,
+                },
+                Expr::Access {
+                    kind: AccessKind::Copy | AccessKind::Move,
+                    place,
+                },
+            ) => {
+                let rhs_ty = self.ty_of_place(place);
+                match rhs_ty {
+                    Ty::RefMut {
+                        origin: source_origin,
+                        ty: rhs_ty,
+                    } => {
+                        facts.introduce_subset.push((
+                            source_origin.into(),
+                            target_origin.into(),
+                            node.clone(),
+                        ));
+                        self.relate_tys(node, lhs_ty, rhs_ty, Variance::Invariant, facts);
+                    }
+
+                    _ => {
+                        unreachable!(
+                            "Can't relate LHS unique ref {:?}, and RHS {:?}",
+                            lhs_ty, rhs_ty
+                        )
+                    }
+                }
+            }
+
+            // `lhs = rhs`, where lhs and rhs are structs, and may have generic parameters which
+            // will need subsets.
+            (
+                Ty::Struct { .. },
+                Expr::Access {
+                    kind: AccessKind::Copy | AccessKind::Move,
+                    place,
+                },
+            ) => {
+                let rhs_ty = self.ty_of_place(place);
+                self.relate_tys(node, lhs_ty, rhs_ty, Variance::Covariant, facts);
+            }
+
+            (_, Expr::Call { .. }) => {
+                // TODO: When possible, check if the function signature requires that the RHS inputs
+                // flow into the LHS output.
             }
 
             _ => {
-                // no origins flow from the RHS
-                return;
+                // Sanity check: all origins must have been processed in the arms above.
+                // If this assert triggers when adding new tests or examples, then
+                // a pattern is missing above.
+                self.assert_no_origins_are_present(lhs_ty, rhs_expr);
             }
-        };
-
-        facts
-            .introduce_subset
-            .push((source_origin.into(), target_origin.into(), node.clone()));
-
-        self.relate_tys(node, lhs_ty, rhs_ty, variance, facts);
+        }
     }
 
     // Emit subset relationships between the two types' parameters, according to the
@@ -612,6 +653,53 @@ impl<'a> FactEmitter<'a> {
 
         node.into()
     }
+
+    // Sanity check that no origins are present
+    // - in the LHS ty
+    // - in borrow expressions on the RHS
+    // - in moves/copies of the RHS ty
+    fn assert_no_origins_are_present(&self, lhs_ty: &Ty, rhs_expr: &Expr) {
+        assert_eq!(
+            lhs_ty.has_origins(),
+            false,
+            "LHS {:?} has unprocess origins, RHS: {:?}",
+            lhs_ty,
+            rhs_expr
+        );
+
+        if let Expr::Access { kind, place } = rhs_expr {
+            assert_eq!(
+                matches!(
+                    kind,
+                    AccessKind::Borrow { .. } | AccessKind::BorrowMut { .. }
+                ),
+                false,
+                "RHS {:?} has unprocessed origins, LHS: {:?}",
+                rhs_expr,
+                lhs_ty,
+            );
+
+            match kind {
+                AccessKind::Borrow { .. } | AccessKind::BorrowMut { .. } => {
+                    panic!(
+                        "RHS {:?} has unprocessed origins, LHS: {:?}",
+                        rhs_expr, lhs_ty,
+                    );
+                }
+
+                AccessKind::Copy | AccessKind::Move => {
+                    let rhs_ty = self.ty_of_place(place);
+                    assert_eq!(
+                        rhs_ty.has_origins(),
+                        false,
+                        "RHS {:?} has unprocessed origins, LHS: {:?}",
+                        rhs_ty,
+                        lhs_ty,
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -620,24 +708,52 @@ enum Variance {
     Invariant,
 }
 
+trait TyVisitor {
+    fn on_origin_visited(&mut self, origin: &Name) -> ControlFlow<()>;
+}
+
 impl Ty {
     fn is_ref(&self) -> bool {
         matches!(self, Ty::Ref { .. } | Ty::RefMut { .. })
     }
 
-    // Collects all the origins present in this type, recursively.
-    fn collect_origins_into(&self, origins: &mut Vec<Origin>) {
+    // Returns true if this type contains origins, recursively.
+    fn has_origins(&self) -> bool {
+        struct OriginVisitor;
+        impl TyVisitor for OriginVisitor {
+            fn on_origin_visited(&mut self, _origin: &Name) -> ControlFlow<()> {
+                ControlFlow::Break(())
+            }
+        }
+        let mut visitor = OriginVisitor;
+        self.visit_origins(&mut visitor).is_some()
+    }
+
+    // Visits all the origins present in this type, recursively.
+    fn visit_origins<V>(&self, visitor: &mut V) -> Option<()>
+    where
+        V: TyVisitor,
+    {
         match self {
             Ty::Ref { origin, ty } | Ty::RefMut { origin, ty } => {
-                origins.push(origin.into());
-                ty.collect_origins_into(origins);
+                if let ControlFlow::Break(value) = visitor.on_origin_visited(origin) {
+                    return Some(value);
+                }
+
+                return ty.visit_origins(visitor);
             }
 
             Ty::Struct { parameters, .. } => {
                 for param in parameters {
                     match param {
-                        Parameter::Origin(origin) => origins.push(origin.into()),
-                        Parameter::Ty(ty) => ty.collect_origins_into(origins),
+                        Parameter::Origin(origin) => {
+                            if let ControlFlow::Break(value) = visitor.on_origin_visited(origin) {
+                                return Some(value);
+                            }
+                        }
+                        Parameter::Ty(ty) => {
+                            return ty.visit_origins(visitor);
+                        }
                     }
                 }
             }
@@ -645,6 +761,23 @@ impl Ty {
             Ty::I32 => {}
             Ty::Unit => {}
         }
+
+        None
+    }
+
+    // Collects all the origins present in this type, recursively.
+    fn collect_origins_into(&self, origins: &mut Vec<Origin>) {
+        struct OriginCollector<'a> {
+            origins: &'a mut Vec<Origin>,
+        }
+        impl TyVisitor for OriginCollector<'_> {
+            fn on_origin_visited(&mut self, origin: &Name) -> ControlFlow<()> {
+                self.origins.push(origin.into());
+                ControlFlow::Continue(())
+            }
+        }
+        let mut visitor = OriginCollector { origins };
+        self.visit_origins(&mut visitor);
     }
 }
 
