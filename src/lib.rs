@@ -25,7 +25,7 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
     let output_path = path.join("output");
     std::fs::create_dir_all(&output_path)?;
 
-    let _ = Command::new("souffle")
+    let status = Command::new("souffle")
         .args(&[
             manifest_dir.join("src/polonius.dl").display().to_string(),
             "-F".to_string(),
@@ -33,8 +33,12 @@ pub fn test_harness(dir_name: &str) -> eyre::Result<()> {
             "-D".to_string(),
             output_path.display().to_string(),
         ])
-        .output()
-        .wrap_err("failed to run souffle")?;
+        .status()
+        .wrap_err("failed to run soufflé")?;
+
+    if !status.success() {
+        return Err(eyre::eyre!("failed to run soufflé"));
+    }
 
     let dot_path = output_path.join("graph.dot");
     graphviz::create_graph(path.as_path(), dot_path.as_path());
