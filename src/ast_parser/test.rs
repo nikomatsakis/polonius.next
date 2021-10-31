@@ -19,7 +19,7 @@ fn expect_parse(s: &str) -> ast::Program {
 fn let_test() {
     let p = expect_parse(
         "
-        let x: i32; 
+        let x: i32;
     ",
     );
 
@@ -286,7 +286,7 @@ fn struct_test() {
     let p = expect_parse(
         "struct Iter<'me, T> { vec: &'me Vec<T>, position: i32 }
         struct Vec<T> { item0: T }
-        
+
     ",
     );
 
@@ -298,6 +298,9 @@ fn struct_test() {
                 generic_decls: [
                     Origin(
                         "'me",
+                        Bounds(
+                            [],
+                        ),
                     ),
                     Ty(
                         "T",
@@ -388,6 +391,9 @@ fn fn_test() {
                 generic_decls: [
                     Origin(
                         "'v",
+                        Bounds(
+                            [],
+                        ),
                     ),
                     Ty(
                         "T",
@@ -420,4 +426,11 @@ fn fn_test() {
         basic_blocks: [],
     }
     "###);
+}
+
+#[test]
+fn fn_origin_bound_test() {
+    insta::assert_debug_snapshot!(expect_parse(
+        "fn foo<'a, 'b: 'a, 'c: 'a + 'b>(_: &'a i32, _: &'b i32, _: &'c i32) -> &'a i32;",
+    ));
 }

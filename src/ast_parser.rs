@@ -64,7 +64,8 @@ peg::parser! {
         )
 
         rule generic_decl() -> ast::GenericDecl = (
-            o:origin_ident() { ast::GenericDecl::Origin(o) } /
+            o:origin_ident() _ ":" _ bounds:origin_ident()**plus() { ast::GenericDecl::Origin(o, ast::Bounds(bounds)) } /
+            o:origin_ident() { ast::GenericDecl::Origin(o, Default::default()) } /
             n:ident() { ast::GenericDecl::Ty(n) }
         )
 
@@ -109,6 +110,7 @@ peg::parser! {
         )
 
         rule comma() -> () = _ "," _ { }
+        rule plus() -> () = _ "+" _ { }
 
         rule basic_block() -> ast::BasicBlock = (
             name:ident() _ ":" _ "{" _ statements:sp(<statement()>)**__ _ successors:goto() _ "}" {

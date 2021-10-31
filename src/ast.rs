@@ -31,9 +31,12 @@ pub struct FnPrototype {
 
 #[derive(Clone, Debug)]
 pub enum GenericDecl {
-    Origin(Name),
+    Origin(Name, Bounds),
     Ty(Name),
 }
+
+#[derive(Clone, Debug, Default)]
+pub struct Bounds(pub Vec<Name>);
 
 #[derive(Clone, Debug)]
 pub struct BasicBlock {
