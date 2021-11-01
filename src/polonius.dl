@@ -48,8 +48,8 @@
 //     * Require `typeof(P) <: T`
 //     * Generate appropriate accesses/invalidations for a read from P (as stated above as well)
 //     * In addition, "unroll" P to add subset relations:
-//          * If `P = *Q` where `Q: &'Q T`, then `'Q <= 'O` (do not continue unrolling)
-//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q <= 'O` and continue "unrolling" `Q`
+//          * If `P = *Q` where `Q: &'Q T`, then `'Q: 'O` (do not continue unrolling)
+//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q: 'O` and continue "unrolling" `Q`
 //          * Why do we continue only with `&mut`? The path we took to reach a `&` not important; the ref could just
 //            be copied out anyway. For `&mut` that path *is* important, because once we finish with our loan,
 //            it can be used to perform mutation again. We need to ensure that we remember the path we came from.
@@ -59,7 +59,7 @@
 //     * Require `typeof(P) = T`
 //     * In addition, "unroll" P to add subset relations:
 //          * If `P = *Q` where `Q: &'Q T`, then error (mut borrow of shared content)
-//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q <= 'O` and continue "unrolling" `Q`
+//          * If `P = *Q` where `Q: &'Q mut T`, then `'Q: 'O` and continue "unrolling" `Q`
 // * Generate `introduce_subset` for subsets that arise from other where-clauses or type relations on this node
 
 // access_origin data with origin `o` at node `n`
