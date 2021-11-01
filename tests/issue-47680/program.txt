@@ -22,11 +22,15 @@
 // v: &'v mut Thing
 
 a: "temp = &'L_Thing mut Thing" {
-    // FIXME: `temp` is overwritten, `'temp` should be cleared here
-    // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be cleared here
-    // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be invalidated here
-    introduce_lease('L_Thing, 'temp)
+    // temp is written: clear its origins, invalidate loans based on it
+    clear_origin('temp)
     invalidate_lease('L_*temp)
+
+    // syntheisze a write to `Thing`
+    invalidate_lease('L_Thing)
+
+    // introduce the lease from the mut borrow
+    introduce_lease('L_Thing, 'temp)
     goto b
 }
 
