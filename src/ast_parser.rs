@@ -9,17 +9,13 @@
 //! String     := "[^"]*"   /* regular expression */
 //! ```
 
-use eyre::WrapErr;
-use itertools::Itertools;
-use std::collections::HashMap;
-use std::path::Path;
 use std::str::FromStr;
 
 use crate::ast;
 use crate::span::{Span, Spanned as Sp, WithSpan};
 
 #[cfg(test)]
-mod test;
+pub(crate) mod test;
 
 peg::parser! {
     grammar ast_parser() for str {
@@ -161,6 +157,6 @@ peg::parser! {
     }
 }
 
-fn parse_ast(input: &str) -> eyre::Result<ast::Program> {
+pub fn parse_ast(input: &str) -> eyre::Result<ast::Program> {
     Ok(ast_parser::program(input)?)
 }

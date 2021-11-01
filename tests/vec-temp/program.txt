@@ -1,10 +1,10 @@
 // let mut x = 22;
 // let mut v = vec![];
 // let p = &x;
-// let mut tmp = &mut v;
+// let tmp = &mut v;
 // Vec::push(tmp, p);
 // x = 23;
-// Vec::len(v); // ERROR
+// Vec::len(&v); // ERROR
 
 // Decls
 // let x: u32
@@ -44,10 +44,11 @@ c: "p = &'L_x x" {
 }
 
 d: "tmp = &'L_v mut v" {
+    // FIXME: `tmp` is overwritten, `'tmp0` and `'tmp1` should be cleared here
     access_origin('v)
     invalidate_origin('L_v)
     clear_origin('L_v)
-    // &'1 mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
+    // &'L_v mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
     introduce_subset('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
     introduce_subset('v, 'tmp1)

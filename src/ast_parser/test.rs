@@ -1,6 +1,6 @@
 use super::*;
 
-fn expect_parse(s: &str) -> ast::Program {
+pub fn expect_parse(s: &str) -> ast::Program {
     match super::ast_parser::program(s) {
         Ok(p) => p,
         Err(e) => {
@@ -19,7 +19,7 @@ fn expect_parse(s: &str) -> ast::Program {
 fn let_test() {
     let p = expect_parse(
         "
-        let x: i32; 
+        let x: i32;
     ",
     );
 
@@ -286,7 +286,7 @@ fn struct_test() {
     let p = expect_parse(
         "struct Iter<'me, T> { vec: &'me Vec<T>, position: i32 }
         struct Vec<T> { item0: T }
-        
+
     ",
     );
 
@@ -420,4 +420,59 @@ fn fn_test() {
         basic_blocks: [],
     }
     "###);
+}
+
+#[test]
+fn example_vec_temp() {
+    let program = "
+        let x: i32;
+        let v: Vec<&'v mut i32>;
+        let p: &'p i32;
+        let tmp: &'tmp0 mut Vec<&'tmp1 mut i32>;
+
+        bb0: {
+            x = 22;
+            v = Vec_new();
+            p = &'L_x x;
+            tmp = &'L_v mut v;
+            Vec_push(move tmp, move p);
+            x = 44;
+            Vec_len(copy v);
+        }
+    ";
+    insta::assert_debug_snapshot!(expect_parse(program));
+}
+
+#[test]
+fn example_issue_47680() {
+    let program = "
+        let temp: &'temp mut Thing;
+        let t0: &'t0 mut Thing;
+        let v: &'v mut Thing;
+
+        bb0: {
+            temp = &'L_Thing mut Thing;
+            goto bb1;
+        }
+
+        bb1: {
+            t0 = &'L_*temp mut *temp;
+            v = MaybeNext(move t0);
+            goto bb2, bb3;
+        }
+
+        bb2: {
+            temp = move v;
+            goto bb4;
+        }
+
+        bb3: {
+            goto bb4;
+        }
+
+        bb4: {
+            goto bb1;
+        }
+    ";
+    insta::assert_debug_snapshot!(expect_parse(program));
 }

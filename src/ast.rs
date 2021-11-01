@@ -67,7 +67,7 @@ pub enum AccessKind {
     BorrowMut(Name),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Ty {
     Ref {
         origin: Name,
@@ -89,13 +89,13 @@ pub enum Ty {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Parameter {
     Origin(Name),
     Ty(Ty),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Place {
     pub base: Name,
     pub fields: Vec<Name>,

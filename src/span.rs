@@ -64,10 +64,7 @@ pub trait WithSpan: Sized {
 
 impl<T> WithSpan for T {
     fn at(self, span: Span) -> Spanned<Self> {
-        Spanned {
-            inner: self,
-            span,
-        }
+        Spanned { inner: self, span }
     }
 }
 
