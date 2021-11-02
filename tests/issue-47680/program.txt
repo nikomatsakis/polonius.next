@@ -22,11 +22,11 @@
 // v: &'v mut Thing
 
 a: "temp = &'L_Thing mut Thing" {
-    // temp is written: clear its origins, invalidate loans based on it
+    // temp is written: clear its origins, invalidate leases based on it
     clear_origin('temp)
     invalidate_lease('L_*temp)
 
-    // syntheisze a write to `Thing`
+    // synthesize a write to `Thing`
     invalidate_lease('L_Thing)
 
     // introduce the lease from the mut borrow

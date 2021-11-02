@@ -12,7 +12,7 @@
 // * First we perform any accesses `access_origin(O, N)`
 // * Then we invalidate any leases `invalidate_lease(L, N)`
 // * Then we clear any origins or leases `clear_origin`, `clear_lease`
-// * Then we introduce any subsets or leases `introduce_subset`, `introduce_lease
+// * Then we introduce any subsets or leases `introduce_subset`, `introduce_lease`
 // 
 // This corresponds to 
 // 

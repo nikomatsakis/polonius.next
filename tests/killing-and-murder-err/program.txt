@@ -44,7 +44,7 @@ c: "y = &'L_*x mut *x" {
     clear_origin('L_*x)
 
     // Unroll `*x`
-    introduce_subset('x, 'L_*x)
+    introduce_subset('x, 'y)
 
     // `&'L_*x mut u32 <: &'y mut u32`
     introduce_lease('L_*x, 'y) 
