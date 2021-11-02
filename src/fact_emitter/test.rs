@@ -93,7 +93,7 @@ fn type_of_vars() {
     //     struct Ref<'a, T> { ref: &'a T }
     //     let r: Ref<'r, Vec<i32>>;
     // ";
-    // assert_debug_snapshot!(ty_of_place(program, "r.ref"), @"");
+    // assert_debug_snapshot!(find_ty(program, "r.ref"), @"");
 
     // TODO ?
     // // generic struct: origins and types, and derefs
@@ -102,7 +102,7 @@ fn type_of_vars() {
     //     struct Ref<'a, T> { ref: &'a T }
     //     let r: Ref<'r, Vec<i32>>;
     // ";
-    // assert_eq!(ty_of_place(program, "r.ref.e"), Ty::I32);
+    // assert_eq!(find_ty(program, "(*r.ref).e"), Ty::I32);
 }
 
 #[test]
