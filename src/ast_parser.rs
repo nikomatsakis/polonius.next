@@ -129,7 +129,7 @@ peg::parser! {
             "(" _ ")" { ast::Expr::Unit }
         )
 
-        rule place() -> ast::Place = precedence!{
+        pub rule place() -> ast::Place = precedence!{
             "*" _ inner:@ {
                 let mut inner = inner;
                 inner.projections.push(ast::Projection::Deref);
@@ -170,3 +170,5 @@ peg::parser! {
 pub fn parse_ast(input: &str) -> eyre::Result<ast::Program> {
     Ok(ast_parser::program(input)?)
 }
+
+pub use self::ast_parser::place;

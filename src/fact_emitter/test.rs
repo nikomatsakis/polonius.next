@@ -7,6 +7,7 @@ mod invalidate_origin;
 
 use super::*;
 use crate::ast_parser::test::expect_parse;
+use crate::ast_parser as parse;
 use insta::assert_debug_snapshot;
 
 pub(crate) fn expect_facts(input: &str) -> Facts {
@@ -22,23 +23,17 @@ fn create_emitter(input: &str) -> FactEmitter {
     FactEmitter::new(program, input, true)
 }
 
-fn place_at_path(path: &str) -> Place {
-    let mut path: Vec<_> = path.split('.').map(ToString::to_string).collect();
-    let base = path.remove(0);
-    Place { base, fields: path }
-}
-
 // Returns the type of the given place's path in the given program.
 fn find_ty(program: &str, path: &str) -> Ty {
     let emitter = create_emitter(program);
-    let place = place_at_path(path);
+    let place = parse::place(path).expect("Invalid place");
     emitter.ty_of_place(&place).clone()
 }
 
 // Returns the origins present in the type of the given place's path in the given program.
 fn find_origins(program: &str, path: &str) -> Vec<Origin> {
     let emitter = create_emitter(program);
-    let place = place_at_path(path);
+    let place = parse::place(path).expect("Invalid place");
     emitter.origins_of_place(&place)
 }
 
