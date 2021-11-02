@@ -199,6 +199,7 @@ pub(crate) fn create_graph(fact_directory: &Path, output_file_path: &Path) {
     let mut output_file = fs::OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .open(&output_file_path)
         .expect("could not open output file");
     output_file

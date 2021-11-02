@@ -32,7 +32,7 @@ pub struct Fact {
 
 peg::parser! {
     grammar fact_parser() for str {
-        pub rule program() -> Program = comment()* _ g:fact()**__ _ n:statement()**__ {
+        pub rule program() -> Program = comment()* _ g:fact()**__ _ n:statement()**__ _ {
             Program {
                 global_facts: g,
                  statements: n
