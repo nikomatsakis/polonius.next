@@ -66,7 +66,7 @@
 .decl access_origin(o: Origin, n: Node)
 .input access_origin
 
-// Invalidate the origin `o` at the node `n`
+// Invalidate the lease `l` at the node `n`
 .decl invalidate_lease(l: Lease, n: Node)
 .input invalidate_lease
 
