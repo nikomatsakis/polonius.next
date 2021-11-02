@@ -3,16 +3,16 @@
 // let p = 22;
 // let mut x: &mut i32 = &mut p; // `x` points at `p`
 // let y = &mut *x; // `y` points at `p` too
-// use(x); 
+// use(x);
 // *y = 11; // ERROR: both `x` and `y` are used
 
 // Decls
 // let p: u32
 // let x: &'x mut u32
 // let y: &'y mut u32
-// 
+//
 // Loan origins:
-// 'L_p: `x`'s borrow of `p` 
+// 'L_p: `x`'s borrow of `p`
 // 'L_*x: `y`'s borrow of `*x`
 
 mark_as_loan_origin('L_p)
@@ -31,7 +31,7 @@ b: "x = &'L_p mut p" {
     clear_origin('L_p)
 
     // `&'L_p mut u32 <: &'x mut u32`
-    introduce_subset('L_p, 'x) 
+    introduce_subset('L_p, 'x)
     goto c
 }
 
@@ -50,7 +50,7 @@ c: "y = &'L_*x mut *x" {
     introduce_subset('x, 'L_*x)
 
     // `&'L_*x mut u32 <: &'y mut u32`
-    introduce_subset('L_*x, 'y) 
+    introduce_subset('L_*x, 'y)
     goto d
 }
 

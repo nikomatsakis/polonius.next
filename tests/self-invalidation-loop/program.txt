@@ -1,9 +1,9 @@
 // let mut x = 42;
 // let mut v: Vec<&mut u32> = vec![];
 // while maybe() {
-//     let p = &mut x; // L_x 
+//     let p = &mut x; // L_x
 //     let v_tmp = &mut v; // L_v // ERROR on second iteration because `v` is used but `x` was borrowed again
-//     Vec::push(v_tmp, p); 
+//     Vec::push(v_tmp, p);
 // }
 
 // Decls
@@ -11,9 +11,9 @@
 // let v: Vec<&'v mut u32>
 // let p: &'p mut u32
 // let v_tmp: &'tmp0 mut Vec<&'tmp1 mut u32>
-// 
+//
 // Loan origins:
-// 'L_x: `p`'s borrow of `x` 
+// 'L_x: `p`'s borrow of `x`
 // 'L_v: temporary borrow of `v` for `Vec::push`
 
 mark_as_loan_origin('L_x)
@@ -31,7 +31,7 @@ b: "v = vec![]" {
 
 c: "p = &'L_x mut x" {
     // Access `x` where `x: u32`
-    
+
     // Invalidate borrows of `x`
     invalidate_origin('L_x)
 
@@ -42,15 +42,15 @@ c: "p = &'L_x mut x" {
     clear_origin('L_x)
 
     // `&'L_x mut u32 <: &'p mut u32`
-    introduce_subset('L_x, 'p) 
-    
+    introduce_subset('L_x, 'p)
+
     goto d
 }
 
 d: "v_tmp = &'L_v mut v" {
     // Access `v` where `v: Vec<&'v mut u32>`
     access_origin('v)
-    
+
     // Invalidate borrows of `v`
     invalidate_origin('L_v)
 
@@ -66,19 +66,19 @@ d: "v_tmp = &'L_v mut v" {
     introduce_subset('tmp1, 'v)
     introduce_subset('v, 'tmp1)
 
-    goto e 
+    goto e
 }
 
 e: "Vec::push(v_tmp, p)" {
     // Access `v_tmp` [== `&'tmp1 mut v`] where `v_tmp: &'tmp0 mut Vec<&'tmp1 mut u32>`
     access_origin('tmp0)
     access_origin('tmp1)
-    
+
     // Access `p` [== `&mut x`] where `p: &'p mut u32`
     access_origin('p)
 
     // Signature requires `&'p mut u32` <: `&'tmp1 mut u32`:
     introduce_subset('p, 'tmp1)
 
-    goto c 
+    goto c
 }

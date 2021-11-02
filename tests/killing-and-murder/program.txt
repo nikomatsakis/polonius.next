@@ -12,9 +12,9 @@
 // let q: u32
 // let x: &'x mut u32
 // let y: &'y mut u32
-// 
+//
 // Loan origins:
-// 'L_p: `x`'s borrow of `p` 
+// 'L_p: `x`'s borrow of `p`
 // 'L_*x: `y`'s borrow of `*x`
 // 'L_q: `x`'s borrow of `q`
 
@@ -40,7 +40,7 @@ c: "x = &'L_p mut p" {
     clear_origin('L_p)
 
     // `&'L_p mut u32 <: &'x mut u32`
-    introduce_subset('L_p, 'x) 
+    introduce_subset('L_p, 'x)
     goto d
 }
 
@@ -59,7 +59,7 @@ d: "y = &'L_*x mut *x" {
     introduce_subset('x, 'L_*x)
 
     // `&'L_*x mut u32 <: &'y mut u32`
-    introduce_subset('L_*x, 'y) 
+    introduce_subset('L_*x, 'y)
     goto e
 }
 
@@ -74,7 +74,7 @@ e: "x = &'L_q mut q" {
     clear_origin('L_*x)
 
     // `&'L_q mut u32 <: &'x mut u32`
-    introduce_subset('L_q, 'x) 
+    introduce_subset('L_q, 'x)
     goto f
 }
 

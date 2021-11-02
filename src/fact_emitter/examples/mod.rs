@@ -24,25 +24,25 @@ fn example_a() {
 
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "x = 3" {
-    	invalidate_origin('L_x)
-    	goto b
+        invalidate_origin('L_x)
+        goto b
     }
 
     b: "y = &'L_x x" {
-    	clear_origin('y)
-    	clear_origin('L_x)
-    	introduce_subset('L_x, 'y)
-    	goto c
+        clear_origin('y)
+        clear_origin('L_x)
+        introduce_subset('L_x, 'y)
+        goto c
     }
 
     c: "x = 4" {
-    	invalidate_origin('L_x)
-    	goto d
+        invalidate_origin('L_x)
+        goto d
     }
 
     d: "use(move y)" {
-    	access_origin('y)
-    	goto
+        access_origin('y)
+        goto
     }
     "###);
 }

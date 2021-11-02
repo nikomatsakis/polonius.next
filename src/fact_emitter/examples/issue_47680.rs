@@ -42,41 +42,41 @@ fn issue_47680() {
 
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "temp = &'L_Thing mut thing" {
-    	invalidate_origin('L_Thing)
-    	clear_origin('temp)
-    	clear_origin('L_Thing)
-    	introduce_subset('L_Thing, 'temp)
-    	goto b
+        invalidate_origin('L_Thing)
+        clear_origin('temp)
+        clear_origin('L_Thing)
+        introduce_subset('L_Thing, 'temp)
+        goto b
     }
 
     b: "t0 = &'L_*temp mut *temp" {
-    	access_origin('temp)
-    	invalidate_origin('L_*temp)
-    	clear_origin('t0)
-    	clear_origin('L_*temp)
-    	introduce_subset('L_*temp, 't0)
-    	goto c
+        access_origin('temp)
+        invalidate_origin('L_*temp)
+        clear_origin('t0)
+        clear_origin('L_*temp)
+        introduce_subset('L_*temp, 't0)
+        goto c
     }
 
     c: "v = MaybeNext(move t0)" {
-    	access_origin('t0)
-    	clear_origin('v)
-    	goto d e
+        access_origin('t0)
+        clear_origin('v)
+        goto d e
     }
 
     d: "temp = move v" {
-    	access_origin('v)
-    	clear_origin('temp)
-    	introduce_subset('v, 'temp)
-    	goto f
+        access_origin('v)
+        clear_origin('temp)
+        introduce_subset('v, 'temp)
+        goto f
     }
 
     e: "(pass)" {
-    	goto f
+        goto f
     }
 
     f: "(pass)" {
-    	goto b
+        goto b
     }
     "###);
 }

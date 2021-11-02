@@ -1,7 +1,7 @@
 // let mut x = 42;
 // let mut p = &22;
 // if maybe() {
-//     p = &x; // L_x 
+//     p = &x; // L_x
 // } else {
 //     x = 0;
 // }
@@ -10,10 +10,10 @@
 // Decls
 // let x: u32
 // let p: &'p u32
-// 
+//
 // Loan origins:
 // 'const: `p`'s borrow of `22`
-// 'L_x: `p`'s borrow of `x` 
+// 'L_x: `p`'s borrow of `x`
 
 mark_as_loan_origin('const)
 mark_as_loan_origin('L_x)
@@ -31,14 +31,14 @@ b: "p = &'const 22" {
     clear_origin('const)
 
     // `&'const u32 <: &'p u32`
-    introduce_subset('const, 'p) 
+    introduce_subset('const, 'p)
 
     goto c d
 }
 
 c: "p = &'L_x x" {
     // Access `x` where `x: u32`
-    
+
     // Invalidate mutable borrows of `x`
 
     // Clear all origins in `p` (overwritten plan):
@@ -48,8 +48,8 @@ c: "p = &'L_x x" {
     clear_origin('L_x)
 
     // `&'L_x u32 <: &'p u32`
-    introduce_subset('L_x, 'p) 
-    
+    introduce_subset('L_x, 'p)
+
     goto e
 }
 
@@ -57,12 +57,12 @@ d: "x = 0" {
     // Invalidate borrows of `x`
     invalidate_origin('L_x)
 
-    goto e 
+    goto e
 }
 
 e: "use(p)" {
     // Access `p` [== `&'p x`] where `x: u32`
     access_origin('p)
 
-    goto 
+    goto
 }

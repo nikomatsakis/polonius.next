@@ -8,9 +8,9 @@
 // Decls
 // let p: u32
 // let x: &'x u32
-// 
+//
 // Loan origins:
-// 'L_p: `x`'s borrow of `p` 
+// 'L_p: `x`'s borrow of `p`
 
 mark_as_loan_origin('L_p)
 
@@ -27,13 +27,13 @@ b: "x = &'L_p p" {
     clear_origin('L_p)
 
     // `&'L_p u32 <: &'x u32`
-    introduce_subset('L_p, 'x) 
+    introduce_subset('L_p, 'x)
     goto c
 }
 
 c: "p += 1" {
     // Access `p` where `p: u32`
-    
+
     // Invalidate borrows of `p`
     invalidate_origin('L_p)
 

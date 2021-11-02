@@ -20,37 +20,37 @@ fn canonical_liveness() {
     ";
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "p = 22" {
-    	invalidate_origin('L_p)
-    	goto b
+        invalidate_origin('L_p)
+        goto b
     }
 
     b: "q = 44" {
-    	invalidate_origin('L_q)
-    	goto c
+        invalidate_origin('L_q)
+        goto c
     }
 
     c: "x = &'L_p p" {
-    	clear_origin('x)
-    	clear_origin('L_p)
-    	introduce_subset('L_p, 'x)
-    	goto d
+        clear_origin('x)
+        clear_origin('L_p)
+        introduce_subset('L_p, 'x)
+        goto d
     }
 
     d: "x = &'L_q q" {
-    	clear_origin('x)
-    	clear_origin('L_q)
-    	introduce_subset('L_q, 'x)
-    	goto e
+        clear_origin('x)
+        clear_origin('L_q)
+        introduce_subset('L_q, 'x)
+        goto e
     }
 
     e: "p = 33" {
-    	invalidate_origin('L_p)
-    	goto f
+        invalidate_origin('L_p)
+        goto f
     }
 
     f: "use(move x)" {
-    	access_origin('x)
-    	goto
+        access_origin('x)
+        goto
     }
     "###);
 }
@@ -71,25 +71,25 @@ fn canonical_liveness_err() {
     ";
     assert_display_snapshot!(expect_facts(program), @r###"
     a: "p = 22" {
-    	invalidate_origin('L_p)
-    	goto b
+        invalidate_origin('L_p)
+        goto b
     }
 
     b: "x = &'L_p p" {
-    	clear_origin('x)
-    	clear_origin('L_p)
-    	introduce_subset('L_p, 'x)
-    	goto c
+        clear_origin('x)
+        clear_origin('L_p)
+        introduce_subset('L_p, 'x)
+        goto c
     }
 
     c: "p = 33" {
-    	invalidate_origin('L_p)
-    	goto d
+        invalidate_origin('L_p)
+        goto d
     }
 
     d: "use(move x)" {
-    	access_origin('x)
-    	goto
+        access_origin('x)
+        goto
     }
     "###);
 }

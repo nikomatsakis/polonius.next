@@ -5,20 +5,20 @@
 // Inputs
 //
 // ## Assumptions about ordering
-// 
+//
 // For a given node `N`...
-// 
+//
 // * First we perform any accesses `access_origin(O, N)`
 // * Then we invalidate any origins `invalidate_origin(L, N)`
 // * Then we clear any origins `clear_origin`
 // * Then we introduce any subsets `introduce_subset`
-// 
-// This corresponds to 
-// 
+//
+// This corresponds to
+//
 // ```
 // place = expr
 // ```
-// 
+//
 // * Evaluating the expr accesses the origins (including potentially some in place)
 // * Then place is overwritten, invalidating and clearing loans
 // * Storing the value also creates subtyping relationships between the type of the value that was stored and the place it was stored into
@@ -38,7 +38,7 @@
 //     * e.g., if there is a loan `'L_*temp` where `temp: &T` and this expression writes to `temp`, then `'L_*temp` is cleared,
 //       not invalidated. This is because memory at `*temp` is not owned, so it is not freed by writing to `temp`,
 //       but `*temp` no longer names the same memory anymore.
-// * For every `&'L_P P` expression, generate `clear_origin('L_P)` 
+// * For every `&'L_P P` expression, generate `clear_origin('L_P)`
 // * If this is a `&'L_P P` for some place `P`, it is treated as a read of the place `P`:
 //     * In addition, "unroll" P to add subset relations:
 //          * If `P = *Q` where `Q: &'O T`, then `'L_P <= O` (do not continue unrolling)
@@ -81,10 +81,10 @@
 .output origin_live_on_entry
 
 // Note that accesses come before clears, so we check on the outgoing edges.
-origin_live_on_entry(O, N) :- 
+origin_live_on_entry(O, N) :-
   access_origin(O, N).
 
-origin_live_on_entry(O, N1) :- 
+origin_live_on_entry(O, N1) :-
   cfg_edge(N1, N2),
   !clear_origin(O, N1),
   origin_live_on_entry(O, N2).
@@ -111,7 +111,7 @@ subset_on_exit(O1, O3, N1) :- // Transitive closure
 
 // Carried over from predecessor.
 // Subsets are filtered from the `subset_on_exit` transitive closure.
-subset_on_entry(O1, O2, N2) :- 
+subset_on_entry(O1, O2, N2) :-
   cfg_edge(N1, N2),
   (origin_live_on_entry(O1, N2); mark_as_loan_origin(O1)),
   (origin_live_on_entry(O2, N2); mark_as_loan_origin(O2)),
@@ -126,10 +126,10 @@ origin_invalidated(O, N2) :- // Introduced by predecessor
   !clear_origin(O, N1),
   (invalidate_origin(O, N1); origin_invalidated(O, N1)).
 
-// Because invalidations conceptually happen before clears, 
+// Because invalidations conceptually happen before clears,
 // propagate them across (existing, not introduced) subset relationships
 // even if `O1` is also (conceptually later) cleared in `N1`.
-origin_invalidated(O2, N2) :- 
+origin_invalidated(O2, N2) :-
   cfg_edge(N1, N2),
   !clear_origin(O2, N1),
   subset_on_entry(O1, O2, N1),

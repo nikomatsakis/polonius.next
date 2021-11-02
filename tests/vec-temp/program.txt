@@ -39,7 +39,7 @@ c: "p = &'L_x x" {
     clear_origin('L_x)
 
     // `&'L_x u32 <: &'p u32`
-    introduce_subset('L_x, 'p) 
+    introduce_subset('L_x, 'p)
     goto d
 }
 

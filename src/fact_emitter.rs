@@ -159,7 +159,7 @@ impl<'a> FactEmitter<'a> {
                         facts.clear_origin.push((origin.clone(), node.clone()));
                     }
 
-                    // TODO: the following is wrong and simplistic, see 
+                    // TODO: the following is wrong and simplistic, see
                     // https://github.com/nikomatsakis/polonius.next/pull/4#discussion_r739325010
                     // but will be fixed by https://github.com/nikomatsakis/polonius.next/pull/10
                     if !lhs_ty.is_ref() {
