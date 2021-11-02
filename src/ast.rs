@@ -89,6 +89,16 @@ pub enum Ty {
     },
 }
 
+impl Ty {
+    /// If this is a reference type, returns the type of the target of that reference.
+    pub fn target(&self) -> Option<&Ty> {
+        match self {
+            Self::Ref { ty, .. } | Self::RefMut { ty, .. } => Some(&*ty),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Parameter {
     Origin(Name),
