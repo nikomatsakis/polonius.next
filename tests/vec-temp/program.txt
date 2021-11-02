@@ -49,7 +49,7 @@ d: "tmp = &'L_v mut v" {
     clear_origin('tmp0)
     clear_origin('tmp1)
 
-    // &'1 mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
+    // &'L_v mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
     introduce_lease('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
     introduce_subset('v, 'tmp1)
