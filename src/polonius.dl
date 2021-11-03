@@ -62,31 +62,52 @@
 //          * If `P = *Q` where `Q: &'Q mut T`, then `'Q: 'O` and continue "unrolling" `Q`
 // * Generate `introduce_subset` for subsets that arise from other where-clauses or type relations on this node
 
-// access_origin data with origin `o` at node `n`
+// Indicates that a reference with origin `o` was dereferenced (or may be).
+//
+// Issued for all origins in the type of some place `P` when `P` is read.
 .decl access_origin(o: Origin, n: Node)
 .input access_origin
 
-// Invalidate the lease `l` at the node `n`
+// Invalidates data potentially derived from the lease `l` at the node `n`.
+//
+// Issued when the place that `l` is leased from is accessed in some incompatible
+// way (e.g., if `l` is an `&mut` lease of some place `P`, then `l` is invalidated
+// when `P` is accessed; if `l` is a `&` lease of `P`, then it is invalidated
+// when `P` is written).
 .decl invalidate_lease(l: Lease, n: Node)
 .input invalidate_lease
 
-// All references with origin `o` are overwritten at node `n`
+// All values with origin `o` in their type are overwritten at node `n`.
+//
+// Since the compiler uses unique origins in the type of all values,
+// this is used when you for all origins in the type of `place` when you
+// have an assignment like `place = ...`. 
 .decl clear_origin(o: Origin, n: Node)
 .input clear_origin
 
-// Lease `l` removed from all origins
+// The path that lease `l` referred to now refers to different memory.
+//
+// This is issued for a lease to `*x` when `x` is overwritten.
 .decl clear_lease(l: Lease, n: Node)
 .input clear_lease
 
-// Require that `o1 <= o2` at node `n`
+// Require that `o1: o2` at node `n`.
+//
+// This fact indicates that a given node requires a subset relation to hold. 
+// Most notably, `&'a T <: &'b T` introduces a requirement that `'a: 'b`
+// (`'a <= 'n`).
 .decl introduce_subset(o1: Origin, o2: Origin, n: Node)
 .input introduce_subset
 
-// Require that `l \in o` at node `n`
+// Require that `l \in o` at node `n`.
+//
+// This is introduced for a lease expression `&place` or `&mut place`.
+// The lease `l` corresponds to this particular lease expression.
+// The origin `o` comes from the type that is produced (or assigned to).
 .decl introduce_lease(l: Lease, o: Origin, n: Node)
 .input introduce_lease
 
-// Control-flow graph edge `n1 -> n2`
+// Potential control-flow graph edge `n1 -> n2`.
 .decl cfg_edge(n1: Node, n2: Node)
 .input cfg_edge
 
