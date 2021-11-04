@@ -80,7 +80,7 @@
 // All values with origin `o` in their type are overwritten at node `n`.
 //
 // Since the compiler uses unique origins in the type of all values,
-// this is used when you for all origins in the type of `place` when you
+// this is used for all origins in the type of `place` when you
 // have an assignment like `place = ...`. 
 .decl clear_origin(o: Origin, n: Node)
 .input clear_origin
@@ -95,7 +95,7 @@
 //
 // This fact indicates that a given node requires a subset relation to hold. 
 // Most notably, `&'a T <: &'b T` introduces a requirement that `'a: 'b`
-// (`'a <= 'n`).
+// (`'a <= 'b`).
 .decl introduce_subset(o1: Origin, o2: Origin, n: Node)
 .input introduce_subset
 
