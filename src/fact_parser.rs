@@ -87,13 +87,15 @@ pub fn generate_facts(input: &str, output_path: &Path) -> eyre::Result<()> {
     Ok(())
 }
 
-const EXPECTED_GLOBAL_FACT_NAMES: &[&str] = &["mark_as_loan_origin"];
+const EXPECTED_GLOBAL_FACT_NAMES: &[&str] = &[];
 const EXPECTED_LOCAL_FACT_NAMES: &[&str] = &[
     "access_origin",
     "cfg_edge",
     "clear_origin",
+    "clear_lease",
     "introduce_subset",
-    "invalidate_origin",
+    "introduce_lease",
+    "invalidate_lease",
 ];
 
 /// Maps a program into a set of facts:

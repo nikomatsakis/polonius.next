@@ -12,10 +12,8 @@
 // Loan origins:
 // 'L_p: `x`'s borrow of `p` 
 
-mark_as_loan_origin('L_p)
-
 a: "p = 22" {
-    invalidate_origin('L_p)
+    invalidate_lease('L_p)
     goto b
 }
 
@@ -27,7 +25,7 @@ b: "x = &'L_p p" {
     clear_origin('L_p)
 
     // `&'L_p u32 <: &'x u32`
-    introduce_subset('L_p, 'x) 
+    introduce_lease('L_p, 'x) 
     goto c
 }
 
@@ -35,7 +33,7 @@ c: "p += 1" {
     // Access `p` where `p: u32`
     
     // Invalidate borrows of `p`
-    invalidate_origin('L_p)
+    invalidate_lease('L_p)
 
     goto d
 }

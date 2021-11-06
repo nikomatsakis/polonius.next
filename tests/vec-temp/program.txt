@@ -16,40 +16,41 @@
 // 'L_x
 // 'L_v
 
-mark_as_loan_origin('L_x)
-mark_as_loan_origin('L_v)
-
 a: "x = 22" {
     // Any thing borrowing `x` is invalid now
-    invalidate_origin('L_x)
+    invalidate_lease('L_x)
     goto b
 }
 
 b: "v = vec![]" {
+    // v is overwritten
     clear_origin('v)
-    invalidate_origin('L_v)
+    invalidate_lease('L_v)
     goto c
 }
 
 c: "p = &'L_x x" {
+    // read from x
+
     // Clear all origins in `p` (overwritten plan):
     clear_origin('p)
 
-    // Clear 'L_x because it's being recreated
-    clear_origin('L_x)
-
     // `&'L_x u32 <: &'p u32`
-    introduce_subset('L_x, 'p) 
+    introduce_lease('L_x, 'p) 
     goto d
 }
 
 d: "tmp = &'L_v mut v" {
-    // FIXME: `tmp` is overwritten, `'tmp0` and `'tmp1` should be cleared here
+    // write to v
     access_origin('v)
-    invalidate_origin('L_v)
-    clear_origin('L_v)
+    invalidate_lease('L_v)
+
+    // `tmp` is overwritten, `'tmp0` and `'tmp1` should be cleared here
+    clear_origin('tmp0)
+    clear_origin('tmp1)
+
     // &'L_v mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
-    introduce_subset('L_v, 'tmp0)
+    introduce_lease('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
     introduce_subset('v, 'tmp1)
     goto e
@@ -69,7 +70,7 @@ e: "Vec::push(tmp, p)" {
 }
 
 f: "x = 23" {
-    invalidate_origin('L_x)
+    invalidate_lease('L_x)
     goto g
 }
 

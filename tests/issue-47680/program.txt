@@ -21,14 +21,16 @@
 // t0: &'t0 mut Thing
 // v: &'v mut Thing
 
-mark_as_loan_origin('L_Thing)
-mark_as_loan_origin('L_*temp)
-
 a: "temp = &'L_Thing mut Thing" {
-    // FIXME: `temp` is overwritten, `'temp` should be cleared here
-    // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be cleared here
-    // FIXME: `Thing` is mutably borrowed, `'L_Thing` should be invalidated here
-    introduce_subset('L_Thing, 'temp)
+    // temp is written: clear its origins, invalidate leases based on it
+    clear_origin('temp)
+    invalidate_lease('L_*temp)
+
+    // synthesize a write to `Thing`
+    invalidate_lease('L_Thing)
+
+    // introduce the lease from the mut borrow
+    introduce_lease('L_Thing, 'temp)
     goto b
 }
 
@@ -37,19 +39,17 @@ b: "t0 = &'L_*temp mut *temp" {
     access_origin('temp)
 
     // Writing to `*temp` invalidates any borrows of `*temp`
-    invalidate_origin('L_*temp)
+    invalidate_lease('L_*temp)
 
     // Overwriting `t0`
     clear_origin('t0)
 
-    // Issuing a fresh `'L_*temp`
-    clear_origin('L_*temp)
+    // Introduce the lease of `*temp`:
+    introduce_lease('L_*temp, 't0)
 
-    // Because we are borrowing from `*temp`:
-    introduce_subset('temp, 'L_*temp)
+    // Because we are borrowing from `*temp` and `temp: &'temp mut Thing`:
+    introduce_subset('temp, 't0)
 
-    // `&'L_*temp mut Thing <: &'t0 mut Thing`
-    introduce_subset('L_*temp, 't0)
     goto c
 }
 
@@ -75,7 +75,7 @@ d: "temp = v" {
 
     // Anything that borrowed from `*temp`
     // no longer is, since `temp` is something else
-    clear_origin('L_*temp)
+    clear_lease('L_*temp)
 
     // Data from `'v` is flowing into `'temp`
     introduce_subset('v, 'temp)
