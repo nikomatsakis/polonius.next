@@ -89,6 +89,16 @@ pub enum Ty {
     },
 }
 
+impl Ty {
+    /// If this is a reference type, returns the type of the target of that reference.
+    pub fn target(&self) -> Option<&Ty> {
+        match self {
+            Self::Ref { ty, .. } | Self::RefMut { ty, .. } => Some(&*ty),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Parameter {
     Origin(Name),
@@ -96,9 +106,19 @@ pub enum Parameter {
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub enum Projection {
+    Field(Name),
+    Deref,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Place {
     pub base: Name,
-    pub fields: Vec<Name>,
+
+    /// Any projections on `base`, starting from the innermost one.
+    ///
+    /// For example, `x.f1.f2` would give `vec!["f1", "f2"]`.
+    pub projections: Vec<Projection>,
 }
 
 pub type Name = String;

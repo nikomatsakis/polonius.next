@@ -540,89 +540,80 @@ impl<'a> FactEmitter<'a> {
     where
         F: FnMut(&Ty),
     {
-        // The `base` is always a variable of the program, but can be deref'd.
-        let base = if let Some(deref_base) = place.deref_base() {
-            deref_base
-        } else {
-            &place.base
-        };
-
         let v = self
             .program
             .variables
             .iter()
-            .find(|v| v.name == base)
+            .find(|v| v.name == place.base)
             .unwrap_or_else(|| panic!("Can't find variable {}", place.base));
 
-        let ty = if place.fields.is_empty() {
-            &v.ty
-        } else {
-            // If there are any fields, then this must be a struct
-            assert!(matches!(v.ty, Ty::Struct { .. }));
+        let mut ty = &v.ty;
 
-            // Find the type of each field in sequence, to return the last field's type
-            place.fields.iter().fold(&v.ty, |ty, field_name| {
-                // Notify a traversal step was taken for the current field parent's ty
-                ty_walked_callback(ty);
+        for proj in &place.projections {
+            // Notify a traversal step was taken for the current field parent's ty
+            ty_walked_callback(ty);
 
-                // Find the struct decl for the parent's ty
-                let (struct_name, struct_substs) = match ty {
-                    Ty::Struct { name, parameters } => (name, parameters),
-                    _ => panic!("Ty {:?} must be a struct to access its fields", ty),
-                };
-                let decl = self
-                    .program
-                    .struct_decls
-                    .iter()
-                    .find(|s| &s.name == struct_name)
-                    .unwrap_or_else(|| {
-                        panic!("Can't find struct {} at field {}", struct_name, field_name,)
-                    });
+            match proj {
+                Projection::Deref => ty = ty.target().expect("Deref of non-reference type"),
 
-                // Find the expected named field inside the struct decl
-                let field = decl
-                    .field_decls
-                    .iter()
-                    .find(|v| &v.name == field_name)
-                    .unwrap_or_else(|| {
-                        panic!("Can't find field {} in struct {}", field_name, struct_name)
-                    });
+                Projection::Field(field_name) => {
+                    let (struct_name, struct_substs) = match ty {
+                        Ty::Struct { name, parameters } => (name, parameters),
+                        _ => panic!("Ty {:?} must be a struct to access its fields", ty),
+                    };
+                    let decl = self
+                        .program
+                        .struct_decls
+                        .iter()
+                        .find(|s| &s.name == struct_name)
+                        .unwrap_or_else(|| {
+                            panic!("Can't find struct {} at field {}", struct_name, field_name,)
+                        });
 
-                // It's possible that the field has a generic type, which we need to substitute
-                // with the matching type from the struct's arguments
-                match &field.ty {
-                    Ty::Struct {
-                        name: field_ty_name,
-                        ..
-                    } => {
-                        if let Some(idx) = decl.generic_decls.iter().position(|d| match d {
-                            GenericDecl::Ty(param_ty_name) => param_ty_name == field_ty_name,
-                            _ => false,
-                        }) {
-                            // We found the field ty in the generic decls, so return the subst
-                            // at the same index
-                            match &struct_substs[idx] {
-                                Parameter::Ty(subst_ty) => subst_ty,
+                    // Find the expected named field inside the struct decl
+                    let field = decl
+                        .field_decls
+                        .iter()
+                        .find(|v| &v.name == field_name)
+                        .unwrap_or_else(|| {
+                            panic!("Can't find field {} in struct {}", field_name, struct_name)
+                        });
 
-                                // TODO: handle generic origins
-                                _ => panic!("The parameter at idx {} should be a Ty", idx),
+                    // It's possible that the field has a generic type, which we need to substitute
+                    // with the matching type from the struct's arguments
+                    ty = match &field.ty {
+                        Ty::Struct {
+                            name: field_ty_name,
+                            ..
+                        } => {
+                            if let Some(idx) = decl.generic_decls.iter().position(|d| match d {
+                                GenericDecl::Ty(param_ty_name) => param_ty_name == field_ty_name,
+                                _ => false,
+                            }) {
+                                // We found the field ty in the generic decls, so return the subst
+                                // at the same index
+                                match &struct_substs[idx] {
+                                    Parameter::Ty(subst_ty) => subst_ty,
+
+                                    // TODO: handle generic origins
+                                    _ => panic!("The parameter at idx {} should be a Ty", idx),
+                                }
+                            } else {
+                                // Otherwise, the field ty is a regular type
+                                &field.ty
                             }
-                        } else {
-                            // Otherwise, the field ty is a regular type
-                            &field.ty
                         }
+                        _ => &field.ty,
                     }
-                    _ => &field.ty,
                 }
-            })
-        };
+            }
+        }
 
         // Notify a step in the walk was taken, either:
         // - the `base` ty, when there are no fields
         // - the last field's ty, from the place's `fields` list. The callbacks for the previous
         // fields in the list have already been processed in the loop just above.
         ty_walked_callback(ty);
-
         ty
     }
 
@@ -785,17 +776,6 @@ impl Ty {
         }
         let mut visitor = OriginCollector { origins };
         self.visit_origins(&mut visitor);
-    }
-}
-
-impl Place {
-    // If the place `base` is deref'd, returns its name without the deref `*`
-    fn deref_base(&self) -> Option<&str> {
-        if self.base.starts_with('*') {
-            Some(&self.base[1..])
-        } else {
-            None
-        }
     }
 }
 

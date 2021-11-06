@@ -50,7 +50,7 @@ Program {
                     inner: Assign(
                         Place {
                             base: "temp",
-                            fields: [],
+                            projections: [],
                         },
                         Access {
                             kind: BorrowMut(
@@ -58,7 +58,7 @@ Program {
                             ),
                             place: Place {
                                 base: "Thing",
-                                fields: [],
+                                projections: [],
                             },
                         },
                     ),
@@ -79,15 +79,17 @@ Program {
                     inner: Assign(
                         Place {
                             base: "t0",
-                            fields: [],
+                            projections: [],
                         },
                         Access {
                             kind: BorrowMut(
                                 "'L_*temp",
                             ),
                             place: Place {
-                                base: "*temp",
-                                fields: [],
+                                base: "temp",
+                                projections: [
+                                    Deref,
+                                ],
                             },
                         },
                     ),
@@ -100,7 +102,7 @@ Program {
                     inner: Assign(
                         Place {
                             base: "v",
-                            fields: [],
+                            projections: [],
                         },
                         Call {
                             name: "MaybeNext",
@@ -109,7 +111,7 @@ Program {
                                     kind: Move,
                                     place: Place {
                                         base: "t0",
-                                        fields: [],
+                                        projections: [],
                                     },
                                 },
                             ],
@@ -133,13 +135,13 @@ Program {
                     inner: Assign(
                         Place {
                             base: "temp",
-                            fields: [],
+                            projections: [],
                         },
                         Access {
                             kind: Move,
                             place: Place {
                                 base: "v",
-                                fields: [],
+                                projections: [],
                             },
                         },
                     ),
