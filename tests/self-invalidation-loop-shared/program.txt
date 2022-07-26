@@ -27,6 +27,7 @@ a: "x = 22" {
 }
 
 b: "v = vec![]" {
+    clear_origin('v)
     invalidate_origin('L_v)
     goto c
 }

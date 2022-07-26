@@ -44,10 +44,12 @@ c: "p = &'L_x x" {
 }
 
 d: "tmp = &'L_v mut v" {
-    // FIXME: `tmp` is overwritten, `'tmp0` and `'tmp1` should be cleared here
     access_origin('v)
     invalidate_origin('L_v)
     clear_origin('L_v)
+    clear_origin('tmp0)
+    clear_origin('tmp1)
+
     // &'L_v mut Vec<&'v mut u32> <: &'tmp0 Vec<&'tmp1 mut u32>
     introduce_subset('L_v, 'tmp0)
     introduce_subset('tmp1, 'v)
