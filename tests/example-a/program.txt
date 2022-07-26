@@ -6,10 +6,10 @@ a: "x = 3" {
 }
 
 b: "y = &'0 x" {
-    // FIXME: `y` is overwritten, so `'y` should be cleared here
     access_origin('x)
     
     clear_origin('0)
+    clear_origin('y)
     introduce_subset('0, 'y)
     goto c
 }

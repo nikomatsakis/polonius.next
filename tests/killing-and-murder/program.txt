@@ -41,6 +41,8 @@ c: "x = &'L_p mut p" {
 
     // `&'L_p mut u32 <: &'x mut u32`
     introduce_subset('L_p, 'x) 
+
+    invalidate_origin('L_p)
     goto d
 }
 
