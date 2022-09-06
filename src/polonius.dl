@@ -77,6 +77,7 @@
 .input cfg_edge
 
 /////////////////////////////////////////////
+// Computes which origins are live at the entry of a node.
 .decl origin_live_on_entry(o: Origin, n: Node)
 .output origin_live_on_entry
 
@@ -90,6 +91,7 @@ origin_live_on_entry(O, N1) :-
   origin_live_on_entry(O, N2).
 
 /////////////////////////////////////////////
+// Computes the subset relationship between origins at node exit.
 .decl subset_on_exit(o1: Origin, o2: Origin, n: Node)
 .output subset_on_exit
 
@@ -106,6 +108,7 @@ subset_on_exit(O1, O3, N1) :- // Transitive closure
   subset_on_exit(O2, O3, N1).
 
 /////////////////////////////////////////////
+// Computes the subset relationship between origins at node entry.
 .decl subset_on_entry(o1: Origin, o2: Origin, n: Node)
 .output subset_on_entry
 
@@ -118,6 +121,7 @@ subset_on_entry(O1, O2, N2) :-
   subset_on_exit(O1, O2, N1).
 
 ////////////////////////////////////////////
+// Computes which origins have been invalidated by a previous node.
 .decl origin_invalidated(o: Origin, n: Node)
 .output origin_invalidated
 
@@ -136,6 +140,8 @@ origin_invalidated(O2, N2) :-
   invalidate_origin(O1, N1).
 
 /////////////////////////////////////////////////////
+// Computes which origins are being accessed while having been
+// invalidated. This is the main output of Polonius.next.
 .decl invalidated_origin_accessed(o: Origin, n: Node)
 .output invalidated_origin_accessed
 
