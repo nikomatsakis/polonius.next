@@ -1,4 +1,6 @@
-Experimental new polonius rules
+# Polonius.next
+
+Experimental new polonius rules.
 
 Try:
 
@@ -6,3 +8,4 @@ Try:
 > souffle src/polonius.dl -F test/example-a -D -
 ```
 
+An onboarding guide for the rules is available [here](RULES-GUIDE.md).
